@@ -14,13 +14,13 @@ pub fn to_proto_chain(_client: &Arc<Client>, message: MessageChain) -> Vec<pbbot
             RQElem::At(element) => append_at(&mut chain, element),
             RQElem::Text(element) => append_text(&mut chain, element),
             RQElem::Face(element) => append_face(&mut chain, element),
-            RQElem::FriendImage(element) => append_friend_image(&mut chain, element),
-            RQElem::GroupImage(element) => append_group_image(&mut chain, element),
-            RQElem::Other(element) => {
-                tracing::trace!("other elem {:?}", element)
-            }
-            element => {
-                tracing::warn!("elem not supported {:?}", element)
+            // RQElem::FriendImage(element) => append_friend_image(&mut chain, element),
+            // RQElem::GroupImage(element) => append_group_image(&mut chain, element),
+            // RQElem::Other(element) => {
+            // tracing::trace!("other elem {:?}", element)
+            // }
+            _ => {
+                // tracing::warn!("elem not supported {:?}", element)
             }
         }
     }
@@ -55,16 +55,16 @@ pub fn append_face(chain: &mut Vec<pbbot::Message>, element: elem::Face) {
     })
 }
 
-pub fn append_friend_image(chain: &mut Vec<pbbot::Message>, element: elem::FriendImage) {
-    chain.push(pbbot::Message {
-        r#type: "image".into(),
-        data: HashMap::from([("url".into(), element.url())]),
-    })
-}
-
-pub fn append_group_image(chain: &mut Vec<pbbot::Message>, element: elem::GroupImage) {
-    chain.push(pbbot::Message {
-        r#type: "image".into(),
-        data: HashMap::from([("url".into(), element.url())]),
-    })
-}
+// pub fn append_friend_image(chain: &mut Vec<pbbot::Message>, element: elem::FriendImage) {
+//     chain.push(pbbot::Message {
+//         r#type: "image".into(),
+//         data: HashMap::from([("url".into(), element.url())]),
+//     })
+// }
+//
+// pub fn append_group_image(chain: &mut Vec<pbbot::Message>, element: elem::GroupImage) {
+//     chain.push(pbbot::Message {
+//         r#type: "image".into(),
+//         data: HashMap::from([("url".into(), element.url())]),
+//     })
+// }

@@ -25,8 +25,8 @@ pub enum RCError {
     PB(#[from] prost::DecodeError),
     #[error("rq error, {0}")]
     RQ(#[from] RQError),
-    #[error("reqwest error, {0}")]
-    Reqwest(#[from] reqwest::Error),
+    // #[error("reqwest error, {0}")]
+    // Reqwest(#[from] reqwest::Error),
     #[error("invalid uri error, {0}")]
     InvalidUri(#[from] tokio_tungstenite::tungstenite::http::uri::InvalidUri),
     #[error("tungstenite http error, {0}")]

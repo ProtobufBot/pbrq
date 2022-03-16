@@ -87,7 +87,7 @@ impl PluginConnection {
         while self.running.load(Ordering::Relaxed) {
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(5))=>{
-                    tracing::trace!("plugin send ping {}", name);
+                    // tracing::trace!("plugin send ping {}", name);
                     self.send_msg(Message::Ping("ping".as_bytes().to_vec()));
                 }
                 out_message = out_channel.recv() => {
