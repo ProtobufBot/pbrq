@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use cached::Cached;
-use rs_qq::client::event::{GroupMessageEvent, PrivateMessageEvent};
+use rs_qq::client::event::{GroupMessageEvent, FriendMessageEvent};
 use rs_qq::handler::QEvent;
 
 use crate::bot;
@@ -15,7 +15,7 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupMessage(e) => Some(pbbot::frame::Data::GroupMessageEvent(
             to_proto_group_message(bot, e).await,
         )),
-        QEvent::PrivateMessage(e) => Some(pbbot::frame::Data::PrivateMessageEvent(
+        QEvent::FriendMessage(e) => Some(pbbot::frame::Data::PrivateMessageEvent(
             to_proto_private_message(bot, e).await,
         )),
         // QEvent::SelfGroupMessage(_) => {}
@@ -87,7 +87,7 @@ pub async fn to_proto_group_message(
 
 pub async fn to_proto_private_message(
     bot: &Arc<Bot>,
-    event: PrivateMessageEvent,
+    event: FriendMessageEvent,
 ) -> pbbot::PrivateMessageEvent {
     let friend = event.friend().await;
     let client = event.client;
