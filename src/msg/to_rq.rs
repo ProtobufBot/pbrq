@@ -79,7 +79,7 @@ pub async fn append_image(
         .to_vec();
     match contact {
         Contact::Group(code) => chain.push(client.upload_group_image(code, data).await?),
-        Contact::Friend(uin) => chain.push(client.upload_private_image(uin, data).await?),
+        Contact::Friend(uin) => chain.push(client.upload_friend_image(uin, data).await?),
     }
     Ok(())
 }
