@@ -97,7 +97,7 @@ pub async fn handle_send_private_msg(
     let chain = to_rq_chain(&bot.client, req.message, Contact::Friend(req.user_id)).await;
     let receipt = bot
         .client
-        .send_private_message(req.user_id, chain.clone())
+        .send_friend_message(req.user_id, chain.clone())
         .await
         .map_err(RCError::RQ)?;
     let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
@@ -156,7 +156,7 @@ pub async fn handle_delete_msg(bot: &Arc<Bot>, req: DeleteMsgReq) -> RCResult<De
             .map_err(RCError::RQ)?;
     } else {
         bot.client
-            .recall_private_message(
+            .recall_friend_message(
                 message.from_uin,
                 message.time as i64,
                 message.seqs,
