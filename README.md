@@ -21,12 +21,12 @@ error: build failed
 ```
 ![error: build failed](https://user-images.githubusercontent.com/66114014/164759104-4eb9e7b4-8e9e-4a29-bdac-ca2a14bbd5bb.png)
 
-### [2]解决方法
+### [1]解决方法
 执行命令：`rustup override set nightly`后再运行build命令编译！
 
 ## 接口的访问方法
 ### 使用PostMan等工具进行访问测试
-- 第一步：打开我们的PostMan工具，如果我们想要访问我们已经运行的`pbbot-rq`程序的接口，我们需要在Headers中添加一条配置，设置`Content-type`为`application/json`访问设置如下：
+- 第一步：打开我们的PostMan工具，如果我们想要访问我们已经运行的`pbbot-rq`程序的接口，我们需要在Headers中添加一条配置，设置`Content-type`为`application/json;charset=UTF-8`访问设置如下：
 ![Header](https://user-images.githubusercontent.com/66114014/164883178-607b4285-2aac-435b-a6ef-67b12600660a.png)
 - 第二步：在Body中填写我们的参数列表，选择访问方式为POST/GET
 ![设置参数列表和访问方式](https://user-images.githubusercontent.com/66114014/164883513-bbe07c62-a54b-423e-81c9-ba776b2e377b.png)
