@@ -65,11 +65,11 @@ pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateCli
     let rand_seed = req.device_seed.unwrap_or(rand::random());
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
     let protocol = match req.client_protocol.unwrap_or(5) {
+        0 => Protocol::IPad,
         1 => Protocol::AndroidPhone,
         2 => Protocol::AndroidWatch,
-        3 => Protocol::AndroidWatch,
+        3 => Protocol::MacOS,
         4 => Protocol::QiDian,
-        5 => Protocol::IPad,
         _ => Protocol::IPad,
     };
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
