@@ -10,7 +10,7 @@ use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use pbbot_rq::handler::{password, plugins, qrcode};
+use pbbot_rq::handler::{bot, password, plugins, qrcode};
 
 #[tokio::main]
 async fn main() {
@@ -54,6 +54,12 @@ async fn main() {
                         .route("/list", get(password::list))
                         .route("/delete", post(password::delete)),
                 ),
+        )
+        .nest(
+            "/bot",
+            Router::new()
+                .route("/list", get(bot::list))
+                .route("/delete", post(bot::delete)),
         )
         .nest(
             "/plugin",
