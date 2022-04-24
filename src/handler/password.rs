@@ -99,9 +99,9 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
     let protocol = match req.client_protocol.unwrap_or(5) {
         1 => Protocol::AndroidPhone,
         2 => Protocol::AndroidWatch,
-        3 => Protocol::AndroidWatch,
-        4 => Protocol::QiDian,
-        5 => Protocol::IPad,
+        3 => Protocol::MacOS,
+        4 => Protocol::IPad,
+        5 => Protocol::QiDian,
         _ => Protocol::IPad,
     };
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
