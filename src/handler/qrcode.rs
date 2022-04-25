@@ -138,13 +138,9 @@ pub async fn query(Json(req): Json<QueryQRCodeReq>) -> RCResult<Json<QueryQRCode
             resp = cli.client.device_lock_login().await.map_err(RCError::RQ)?;
         }
         if let LoginResponse::Success(_) = resp {
-            if let Some((_, client)) = CLIENTS.remove(&sig) {
-                let uin = client.client.uin().await;
-                tracing::info!("login success: {}", uin);
-                on_login(client.client, client.event_receiver).await;
-            } else {
-                tracing::warn!("failed to remove client: {:?}", sig.to_vec());
-            }
+            let uin = cli.client.uin().await;
+            tracing::info!("login success: {}", uin);
+            on_login(cli.client, cli.event_receiver).await;
         }
     }
     Ok(Json(QueryQRCodeResp {
