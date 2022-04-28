@@ -11,19 +11,19 @@ rs-qq = { git = "https://github.com/lz1998/rs-qq.git", branch = "master" }
 futures = "0.3"
 async-trait = "0.1"
 bytes = "1.1.0"
-tokio-tungstenite = "0.16"
+tokio-tungstenite = "0.17.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.8"
 base64 = "0.13"
 lazy_static = "1"
-
-prost = "0.9"
+tower-http = {version = "0.2.0", features = ["fs", "trace"]}
+prost = "0.10.1"
 prost-types = "0.9"
 thiserror = "1"
 tracing = "0.1"
-axum = { version = "0.4" }
-cached = "0.30"
+axum = { version = "0.5.4" }
+cached = "0.34.0"
 tracing-subscriber = { version = "0.3", features = ["fmt", "local-time"] }
 time = { version = "0.3", features = ["macros", "local-offset"] }
 dashmap = "5.2"

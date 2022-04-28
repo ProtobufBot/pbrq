@@ -1,16 +1,16 @@
 #![feature(async_closure)]
 
 use std::net::SocketAddr;
-
 use axum::{
-    routing::{get, post},
+    http::{StatusCode},
+    routing::{get, post, get_service},
     Router,
 };
-use tracing::Level;
+use tracing::{Level};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-
 use pbbot_rq::handler::{bot, password, plugins, qrcode};
+use tower_http::{services::ServeDir};
 
 #[tokio::main]
 async fn main() {
@@ -33,6 +33,15 @@ async fn main() {
         )
         .init();
     let app = Router::new()
+        .nest(
+            "/index",
+            get_service(ServeDir::new("dist")).handle_error(|error: std::io::Error| async move{
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Unhandle internal error{}", error)
+                )
+            }),
+        )
         .route("/ping", get(async move || "pong"))
         .nest(
             "/login",
@@ -68,8 +77,10 @@ async fn main() {
                 .route("/list", get(plugins::list))
                 .route("/delete", post(plugins::delete)),
         );
+    
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     tracing::info!("listening on {}", addr);
+    tracing::info!("浏览器打开 {}/index", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
