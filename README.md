@@ -32,3 +32,10 @@ error: build failed
 ![设置参数列表和访问方式](https://user-images.githubusercontent.com/66114014/164883513-bbe07c62-a54b-423e-81c9-ba776b2e377b.png)
 ### 接口的参数和访问方式
 
+# 静态文件服务
+将编译好的静态文件放到main.exe同目录下，打开main.exe,在浏览器里输入 `127.0.0.1:3000/index`
+![1](./assets/QQ%E6%88%AA%E5%9B%BE20220428131935.png)
+![1](./assets/QQ%E6%88%AA%E5%9B%BE20220428132804.png)
+![1](./assets/QQ%E6%88%AA%E5%9B%BE20220428132940.png)
+
+前端项目地址:[pbbot-rq-ui](https://github.com/dongeast/pbbot-rq-ui)
