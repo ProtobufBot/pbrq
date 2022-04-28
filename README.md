@@ -34,8 +34,8 @@ error: build failed
 
 # 静态文件服务
 将编译好的静态文件放到main.exe同目录下，打开main.exe,在浏览器里输入 `127.0.0.1:3000/index`
-![1](https://github.com/2mf8/pbbot-rq/raw/main/assets/QQ%E6%88%AA%E5%9B%BE20220428131935.png)
-![1](https://github.com/2mf8/pbbot-rq/raw/main/assets/QQ%E6%88%AA%E5%9B%BE20220428132804.png)
-![1](https://github.com/2mf8/pbbot-rq/raw/main/assets/QQ%E6%88%AA%E5%9B%BE20220428132940.png)
+![1](https://github.com/2mf8/pbbot-rq/user-images/main/assets/QQ%E6%88%AA%E5%9B%BE20220428131935.png)
+![1](https://github.com/2mf8/pbbot-rq/user-images/main/assets/QQ%E6%88%AA%E5%9B%BE20220428132804.png)
+![1](https://github.com/2mf8/pbbot-rq/user-images/main/assets/QQ%E6%88%AA%E5%9B%BE20220428132940.png)
 
 前端项目地址:[pbbot-rq-ui](https://github.com/dongeast/pbbot-rq-ui)
