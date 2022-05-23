@@ -2,7 +2,7 @@ use std::io;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use rs_qq::RQError;
+use ricq::RQError;
 use thiserror::Error;
 
 pub type RCResult<T> = Result<T, RCError>;

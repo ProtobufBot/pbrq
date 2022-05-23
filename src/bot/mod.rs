@@ -3,9 +3,9 @@ use std::sync::atomic::AtomicI32;
 use std::sync::Arc;
 use std::time::Duration;
 
-use rs_qq::handler::QEvent;
-use rs_qq::msg::MessageChain;
-use rs_qq::Client;
+use ricq::handler::QEvent;
+use ricq::msg::MessageChain;
+use ricq::Client;
 use tokio::sync::{broadcast, RwLock};
 
 use crate::event::to_proto_event;

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-rs-qq = { git = "https://github.com/lz1998/rs-qq.git", branch = "master" }
+ricq = "0.1"
 futures = "0.3"
 async-trait = "0.1"
 bytes = "1.1.0"

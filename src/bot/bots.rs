@@ -3,9 +3,9 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use lazy_static::lazy_static;
-use rs_qq::ext::common::after_login;
-use rs_qq::handler::QEvent;
-use rs_qq::Client;
+use ricq::ext::common::after_login;
+use ricq::handler::QEvent;
+use ricq::Client;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 

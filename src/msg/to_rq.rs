@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use rs_qq::msg::{elem, MessageChain};
-use rs_qq::Client;
+use ricq::msg::{elem, MessageChain};
+use ricq::Client;
 
 use crate::error::{RCError, RCResult};
 use crate::idl::pbbot;

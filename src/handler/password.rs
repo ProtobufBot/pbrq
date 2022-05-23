@@ -4,8 +4,8 @@ use axum::Json;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::{prelude::StdRng, SeedableRng};
-use rs_qq::handler::QEvent;
-use rs_qq::{
+use ricq::handler::QEvent;
+use ricq::{
     device::Device,
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,

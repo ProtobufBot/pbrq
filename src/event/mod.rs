@@ -2,8 +2,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use cached::Cached;
-use rs_qq::client::event::{GroupMessageEvent, FriendMessageEvent};
-use rs_qq::handler::QEvent;
+use ricq::client::event::{FriendMessageEvent, GroupMessageEvent};
+use ricq::handler::QEvent;
 
 use crate::bot;
 use crate::bot::Bot;

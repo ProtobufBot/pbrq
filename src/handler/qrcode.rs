@@ -6,10 +6,10 @@ use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rs_qq::device::Device;
-use rs_qq::handler::QEvent;
-use rs_qq::version::{get_version, Protocol};
-use rs_qq::{Client, LoginResponse, QRCodeState};
+use ricq::device::Device;
+use ricq::handler::QEvent;
+use ricq::version::{get_version, Protocol};
+use ricq::{Client, LoginResponse, QRCodeState};
 use serde::{Deserialize, Serialize};
 
 use crate::bot::bots::on_login;

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use rs_qq::msg::elem::RQElem;
-use rs_qq::msg::{elem, MessageChain};
-use rs_qq::Client;
+use ricq::msg::elem::RQElem;
+use ricq::msg::{elem, MessageChain};
+use ricq::Client;
 
 use crate::idl::pbbot;
 
