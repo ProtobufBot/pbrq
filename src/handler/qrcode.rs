@@ -7,10 +7,12 @@ use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use ricq::device::Device;
+use ricq::ext::reconnect::{Credential, Token};
 use ricq::handler::QEvent;
 use ricq::version::{get_version, Protocol};
 use ricq::{Client, LoginResponse, QRCodeState};
 use serde::{Deserialize, Serialize};
+use tokio::task::JoinHandle;
 
 use crate::bot::bots::on_login;
 use crate::error::{RCError, RCResult};
@@ -20,6 +22,7 @@ pub struct QRCodeClient {
     pub image: Vec<u8>,
     pub client: Arc<Client>,
     pub event_receiver: tokio::sync::broadcast::Receiver<QEvent>,
+    pub network_join_handle: JoinHandle<()>,
 }
 
 lazy_static! {
@@ -78,7 +81,7 @@ pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateCli
         .await
         .map_err(RCError::IO)?;
     let c = cli.clone();
-    tokio::spawn(async move { c.start(stream).await });
+    let network_join_handle = tokio::spawn(async move { c.start(stream).await });
     tokio::task::yield_now().await;
     let resp = cli.fetch_qrcode().await?;
 
@@ -90,6 +93,7 @@ pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateCli
                 image: image_fetch.image_data.to_vec(),
                 client: cli,
                 event_receiver: receiver,
+                network_join_handle,
             },
         );
         Ok(Json(CreateClientResp {
@@ -139,8 +143,15 @@ pub async fn query(Json(req): Json<QueryQRCodeReq>) -> RCResult<Json<QueryQRCode
         }
         if let LoginResponse::Success(_) = resp {
             let uin = cli.client.uin().await;
+            let credential = Credential::Token(Token(cli.client.gen_token().await));
             tracing::info!("login success: {}", uin);
-            on_login(cli.client, cli.event_receiver).await;
+            on_login(
+                cli.client,
+                cli.event_receiver,
+                credential,
+                cli.network_join_handle,
+            )
+            .await;
         }
     }
     Ok(Json(QueryQRCodeResp {

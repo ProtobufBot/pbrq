@@ -4,6 +4,7 @@ use axum::Json;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::{prelude::StdRng, SeedableRng};
+use ricq::ext::reconnect::{Credential, Password};
 use ricq::handler::QEvent;
 use ricq::{
     device::Device,
@@ -11,6 +12,7 @@ use ricq::{
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,
 };
 use serde::{Deserialize, Serialize};
+use tokio::task::JoinHandle;
 
 use crate::bot::bots::on_login;
 use crate::error::{RCError, RCResult};
@@ -19,6 +21,8 @@ pub struct PasswordClient {
     pub client: Arc<Client>,
     pub login_response: LoginResponse,
     pub event_receiver: tokio::sync::broadcast::Receiver<QEvent>,
+    pub network_join_handle: JoinHandle<()>,
+    pub credential: Credential,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -110,15 +114,19 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
         .await
         .map_err(RCError::IO)?;
     let c = cli.clone();
-    tokio::spawn(async move { c.start(stream).await });
+    let network_join_handle = tokio::spawn(async move { c.start(stream).await });
     tokio::task::yield_now().await;
     let mut resp = cli.password_login(req.uin, &req.password).await?;
     if let LoginResponse::DeviceLockLogin(_) = resp {
         resp = cli.device_lock_login().await.map_err(RCError::RQ)?;
     }
+    let credential = Credential::Password(Password {
+        uin: req.uin,
+        password: req.password,
+    });
     if let LoginResponse::Success(_) = resp {
         tracing::info!("login success: {}", req.uin);
-        on_login(cli, receiver).await;
+        on_login(cli, receiver, credential, network_join_handle).await;
     } else {
         CLIENTS.insert(
             req.uin,
@@ -126,6 +134,8 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
                 client: cli,
                 login_response: resp.clone(),
                 event_receiver: receiver,
+                network_join_handle,
+                credential,
             },
         );
     }
@@ -146,7 +156,13 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
     if let LoginResponse::Success(_) = resp {
         if let Some((uin, client)) = CLIENTS.remove(&req.uin) {
             tracing::info!("login success: {}", uin);
-            on_login(client.client, client.event_receiver).await;
+            on_login(
+                client.client,
+                client.event_receiver,
+                client.credential,
+                client.network_join_handle,
+            )
+            .await;
         } else {
             tracing::warn!("failed to remove client: {}", req.uin);
         }
@@ -170,7 +186,13 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
     if let LoginResponse::Success(_) = resp {
         if let Some((uin, client)) = CLIENTS.remove(&req.uin) {
             tracing::info!("login success: {}", uin);
-            on_login(client.client, client.event_receiver).await;
+            on_login(
+                client.client,
+                client.event_receiver,
+                client.credential,
+                client.network_join_handle,
+            )
+            .await;
         } else {
             tracing::warn!("failed to remove client: {}", req.uin);
         }

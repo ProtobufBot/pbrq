@@ -41,7 +41,6 @@ pub async fn to_proto_group_message(
     bot: &Arc<Bot>,
     event: GroupMessageEvent,
 ) -> pbbot::GroupMessageEvent {
-    let member = event.member().await;
     let client = event.client;
     let message = event.message;
     let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
@@ -68,17 +67,10 @@ pub async fn to_proto_group_message(
         anonymous: None,                           // TODO
         raw_message: message.elements.to_string(), // TODO
         message: to_proto_chain(&client, message.elements),
-        sender: member.map(|m| pbbot::group_message_event::Sender {
-            user_id: m.uin,
-            nickname: m.nickname,
-            card: m.card_name,
-            title: m.special_title,
-            // TODO
-            sex: "".to_string(),
-            age: 0,
-            area: "".to_string(),
-            level: "".to_string(),
-            role: "".to_string(),
+        sender: Some(pbbot::group_message_event::Sender {
+            user_id: message.from_uin,
+            card: message.group_card,
+            ..Default::default()
         }),
         font: 0,
         extra: Default::default(),
@@ -89,7 +81,6 @@ pub async fn to_proto_private_message(
     bot: &Arc<Bot>,
     event: FriendMessageEvent,
 ) -> pbbot::PrivateMessageEvent {
-    let friend = event.friend().await;
     let client = event.client;
     let message = event.message;
     let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
@@ -114,12 +105,10 @@ pub async fn to_proto_private_message(
         user_id: message.from_uin,
         raw_message: message.elements.to_string(), // TODO
         message: to_proto_chain(&client, message.elements),
-        sender: friend.map(|f| pbbot::private_message_event::Sender {
-            user_id: f.uin,
-            nickname: f.nick.clone(),
-            // TODO
-            sex: "".to_string(),
-            age: 0,
+        sender: Some(pbbot::private_message_event::Sender {
+            user_id: message.from_uin,
+            nickname: message.from_nick,
+            ..Default::default()
         }),
         font: 0,
         extra: Default::default(),
