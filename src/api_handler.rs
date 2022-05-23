@@ -35,29 +35,29 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
     match data {
         Data::SendPrivateMsgReq(req) => handle_send_private_msg(bot, req)
             .await
-            .map(|resp| Data::SendPrivateMsgResp(resp)),
+            .map(Data::SendPrivateMsgResp),
         Data::SendGroupMsgReq(req) => handle_send_group_msg(bot, req)
             .await
-            .map(|resp| Data::SendGroupMsgResp(resp)),
+            .map(Data::SendGroupMsgResp),
         // Data::SendMsgReq(_) => {}
         Data::DeleteMsgReq(req) => handle_delete_msg(bot, req)
             .await
-            .map(|resp| Data::DeleteMsgResp(resp)),
+            .map(Data::DeleteMsgResp),
         // Data::GetMsgReq(_) => {}
         // Data::GetForwardMsgReq(_) => {}
         Data::SendLikeReq(req) => handle_send_like(bot, req)
             .await
-            .map(|resp| Data::SendLikeResp(resp)),
+            .map(Data::SendLikeResp),
         Data::SetGroupKickReq(req) => handle_group_kick(bot, req)
             .await
-            .map(|resp| Data::SetGroupKickResp(resp)),
+            .map(Data::SetGroupKickResp),
         Data::SetGroupBanReq(req) => handle_group_ban(bot, req)
             .await
-            .map(|resp| Data::SetGroupBanResp(resp)),
+            .map(Data::SetGroupBanResp),
         // Data::SetGroupAnonymousBanReq(_) => {}
         Data::SetGroupWholeBanReq(req) => handle_group_whole_ban(bot, req)
             .await
-            .map(|resp| Data::SetGroupWholeBanResp(resp)),
+            .map(Data::SetGroupWholeBanResp),
         // Data::SetGroupAdminReq(_) => {}
         // Data::SetGroupAnonymousReq(_) => {}
         // Data::SetGroupCardReq(_) => {}

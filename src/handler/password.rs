@@ -129,7 +129,7 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
             },
         );
     }
-    return Ok(Json(PasswordLoginResp::from(resp)));
+    Ok(Json(PasswordLoginResp::from(resp)))
 }
 
 pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<PasswordLoginResp>> {
@@ -153,7 +153,7 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
     } else {
         cli.login_response = resp.clone();
     }
-    return Ok(Json(PasswordLoginResp::from(resp)));
+    Ok(Json(PasswordLoginResp::from(resp)))
 }
 
 pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
@@ -177,7 +177,7 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
     } else {
         cli.login_response = resp.clone();
     }
-    return Ok(Json(PasswordLoginResp::from(resp)));
+    Ok(Json(PasswordLoginResp::from(resp)))
 }
 
 #[derive(Default, Serialize)]

@@ -67,7 +67,9 @@ impl PluginConnection {
         let addr = format!(
             "{}:{}",
             uri.host().unwrap_or("localhost"),
-            uri.port().map(|p| p.to_string()).unwrap_or("8081".into())
+            uri.port()
+                .map(|p| p.to_string())
+                .unwrap_or_else(|| "8081".into())
         );
         let stream = TcpStream::connect(addr).await.map_err(RCError::IO)?;
         let req = Request::builder()
