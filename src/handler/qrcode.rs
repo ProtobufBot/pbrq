@@ -6,11 +6,14 @@ use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use ricq::device::Device;
-use ricq::ext::reconnect::{Credential, Token};
-use ricq::handler::QEvent;
-use ricq::version::{get_version, Protocol};
-use ricq::{Client, LoginResponse, QRCodeState};
+use ricq::{
+    client::NetworkStatus,
+    device::Device,
+    ext::reconnect::Credential,
+    handler::QEvent,
+    version::{get_version, Protocol},
+    Client, LoginResponse, QRCodeState,
+};
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
 
@@ -143,7 +146,7 @@ pub async fn query(Json(req): Json<QueryQRCodeReq>) -> RCResult<Json<QueryQRCode
         }
         if let LoginResponse::Success(_) = resp {
             let uin = cli.client.uin().await;
-            let credential = Credential::Token(Token(cli.client.gen_token().await));
+            let credential = Credential::Token(cli.client.gen_token().await);
             tracing::info!("login success: {}", uin);
             on_login(
                 cli.client,
@@ -203,7 +206,7 @@ pub struct DeleteClientResp {}
 
 pub async fn delete(Json(req): Json<DeleteClientReq>) -> RCResult<Json<DeleteClientResp>> {
     if let Some((_, cli)) = CLIENTS.remove(&Bytes::from(req.sig)) {
-        cli.client.stop();
+        cli.client.stop(NetworkStatus::Stop);
     }
     Ok(Json(DeleteClientResp {}))
 }

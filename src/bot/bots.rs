@@ -1,13 +1,14 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
 use dashmap::DashMap;
 use lazy_static::lazy_static;
-use ricq::ext::common::after_login;
-use ricq::ext::reconnect::{auto_reconnect, Credential, DefaultConnector};
-use ricq::handler::QEvent;
-use ricq::Client;
+use ricq::{
+    ext::common::after_login,
+    ext::reconnect::{auto_reconnect, Credential, DefaultConnector},
+    handler::QEvent,
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
@@ -58,7 +59,7 @@ pub async fn delete_bot(uin: i64) {
 pub struct BotInfo {
     pub uin: i64,
     pub nick: String,
-    pub running: bool,
+    pub status: u8,
 }
 
 pub async fn list_bot() -> Vec<BotInfo> {
@@ -67,7 +68,7 @@ pub async fn list_bot() -> Vec<BotInfo> {
         infos.push(BotInfo {
             uin: *bot.key(),
             nick: bot.client.account_info.read().await.nickname.clone(),
-            running: bot.client.running.load(Ordering::Relaxed),
+            status: bot.client.get_status(),
         })
     }
     infos

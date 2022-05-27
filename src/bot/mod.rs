@@ -3,6 +3,7 @@ use std::sync::atomic::AtomicI32;
 use std::sync::Arc;
 use std::time::Duration;
 
+use ricq::client::NetworkStatus;
 use ricq::handler::QEvent;
 use ricq::msg::MessageChain;
 use ricq::Client;
@@ -104,7 +105,7 @@ impl Bot {
         for (_, p) in self.plugin_connections.iter() {
             p.stop();
         }
-        self.client.stop();
+        self.client.stop(NetworkStatus::Stop);
     }
 }
 

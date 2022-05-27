@@ -4,10 +4,11 @@ use axum::Json;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::{prelude::StdRng, SeedableRng};
-use ricq::ext::reconnect::{Credential, Password};
-use ricq::handler::QEvent;
 use ricq::{
+    client::NetworkStatus,
     device::Device,
+    ext::reconnect::{Connector, Credential, DefaultConnector, Password},
+    handler::QEvent,
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,
 };
@@ -110,9 +111,8 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
     };
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
     let cli = Arc::new(Client::new(device, get_version(protocol), sender));
-    let stream = tokio::net::TcpStream::connect(cli.get_address())
-        .await
-        .map_err(RCError::IO)?;
+    let connector = DefaultConnector;
+    let stream = connector.connect(&cli).await.map_err(RCError::IO)?;
     let c = cli.clone();
     let network_join_handle = tokio::spawn(async move { c.start(stream).await });
     tokio::task::yield_now().await;
@@ -235,7 +235,7 @@ pub struct DeleteClientResp {}
 
 pub async fn delete(Json(req): Json<DeleteClientReq>) -> RCResult<Json<DeleteClientResp>> {
     if let Some((_, cli)) = CLIENTS.remove(&req.uin) {
-        cli.client.stop();
+        cli.client.stop(NetworkStatus::Stop);
     }
     Ok(Json(DeleteClientResp {}))
 }
