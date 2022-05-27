@@ -28,7 +28,7 @@ async fn main() {
         .with(
             tracing_subscriber::filter::Targets::new()
                 .with_target("main", Level::DEBUG)
-                .with_target("pbbot-rq", Level::DEBUG)
+                .with_target("pbbot_rq", Level::DEBUG)
                 .with_target("ricq", Level::DEBUG),
         )
         .init();
