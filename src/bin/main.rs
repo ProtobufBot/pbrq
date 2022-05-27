@@ -28,8 +28,8 @@ async fn main() {
         .with(
             tracing_subscriber::filter::Targets::new()
                 .with_target("main", Level::DEBUG)
-                .with_target("rq_client", Level::DEBUG)
-                .with_target("rs_qq", Level::DEBUG),
+                .with_target("pbbot-rq", Level::DEBUG)
+                .with_target("ricq", Level::DEBUG),
         )
         .init();
     let app = Router::new()

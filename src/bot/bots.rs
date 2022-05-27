@@ -28,7 +28,6 @@ pub async fn on_login(
 ) {
     let uin = client.uin().await;
     after_login(&client).await;
-    // TODO auto reconnect
     let bot = Arc::new(Bot::new(
         client.clone(),
         load_plugins(PLUGIN_PATH)
@@ -38,15 +37,17 @@ pub async fn on_login(
     BOTS.insert(uin, bot.clone());
     bot.start_plugins();
     bot.start_handle_event(event_receiver);
-    network_join_handle.await.ok();
-    auto_reconnect(
-        client,
-        credential,
-        Duration::from_secs(10),
-        10,
-        DefaultConnector,
-    )
-    .await;
+    tokio::spawn(async move {
+        network_join_handle.await.ok();
+        auto_reconnect(
+            client,
+            credential,
+            Duration::from_secs(10),
+            10,
+            DefaultConnector,
+        )
+        .await;
+    });
 }
 
 pub async fn delete_bot(uin: i64) {
