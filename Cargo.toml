@@ -22,7 +22,7 @@ prost = "0.9"
 prost-types = "0.9"
 thiserror = "1"
 tracing = "0.1"
-axum = { version = "0.4" }
+axum = { version = "0.5" }
 cached = "0.30"
 tracing-subscriber = { version = "0.3", features = ["fmt", "local-time"] }
 time = { version = "0.3", features = ["macros", "local-offset"] }
