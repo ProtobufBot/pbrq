@@ -6,3 +6,4 @@ pub mod handler;
 pub mod idl;
 pub mod msg;
 pub mod plugin;
+pub mod util;

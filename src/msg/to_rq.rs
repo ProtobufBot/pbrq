@@ -4,8 +4,9 @@ use std::sync::Arc;
 use ricq::msg::{elem, MessageChain};
 use ricq::Client;
 
-use crate::error::{RCError, RCResult};
+use crate::error::RCResult;
 use crate::idl::pbbot;
+use crate::util::uri_reader::get_binary;
 
 #[derive(Clone, Debug)]
 pub enum Contact {
@@ -68,15 +69,7 @@ pub async fn append_image(
     contact: Contact,
 ) -> RCResult<()> {
     let url = data.remove("url").unwrap_or_default();
-    let data = reqwest::Client::new()
-        .get(url)
-        .send()
-        .await
-        .map_err(RCError::Reqwest)?
-        .bytes()
-        .await
-        .map_err(RCError::Reqwest)?
-        .to_vec();
+    let data = get_binary(&url).await?;
     match contact {
         Contact::Group(code) => chain.push(client.upload_group_image(code, data).await?),
         Contact::Friend(uin) => chain.push(client.upload_friend_image(uin, data).await?),

@@ -68,7 +68,7 @@ pub struct CreateClientResp {
 }
 
 pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateClientResp>> {
-    let rand_seed = req.device_seed.unwrap_or(rand::random());
+    let rand_seed = req.device_seed.unwrap_or_else(rand::random);
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
     let protocol = match req.client_protocol.unwrap_or(5) {
         0 => Protocol::IPad,
