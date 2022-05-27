@@ -12,12 +12,26 @@ use crate::msg::to_proto_chain;
 
 pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::frame::Data> {
     match event {
-        QEvent::GroupMessage(e) => Some(pbbot::frame::Data::GroupMessageEvent(
-            to_proto_group_message(bot, e).await,
-        )),
-        QEvent::FriendMessage(e) => Some(pbbot::frame::Data::PrivateMessageEvent(
-            to_proto_private_message(bot, e).await,
-        )),
+        QEvent::GroupMessage(e) => {
+            tracing::info!(
+                "MESSAGE (GROUP={}): {}",
+                e.message.group_code,
+                e.message.elements
+            );
+            Some(pbbot::frame::Data::GroupMessageEvent(
+                to_proto_group_message(bot, e).await,
+            ))
+        }
+        QEvent::FriendMessage(e) => {
+            tracing::info!(
+                "MESSAGE (FRIEND={}): {}",
+                e.message.from_uin,
+                e.message.elements
+            );
+            Some(pbbot::frame::Data::PrivateMessageEvent(
+                to_proto_private_message(bot, e).await,
+            ))
+        }
         // QEvent::SelfGroupMessage(_) => {}
         // QEvent::TempMessage(_) => {}
         // QEvent::GroupRequest(_) => {}

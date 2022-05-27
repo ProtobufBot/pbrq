@@ -99,7 +99,10 @@ lazy_static! {
 }
 
 pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLoginResp>> {
-    let rand_seed = req.device_seed.unwrap_or(req.uin as u64);
+    let mut rand_seed = req.device_seed.unwrap_or(req.uin as u64);
+    if rand_seed == 0 {
+        rand_seed = req.uin as u64;
+    }
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
     let protocol = match req.client_protocol.unwrap_or(5) {
         0 => Protocol::IPad,
