@@ -30,6 +30,7 @@ dashmap = "5.2"
 hyper = { version = "0.14", features = ["client", "http1"] }
 hyper-tls = "0.5"
 xml-rs = "0.8"
+async-recursion = "1.0.0"
 
 [build-dependencies]
 #lust-build = { version = "*", registry = "crates-byted" }

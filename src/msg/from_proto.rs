@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_recursion::async_recursion;
 use ricq::msg::{elem, MessageChain};
 use ricq::Client;
 
 use crate::error::RCResult;
 use crate::idl::pbbot;
+use crate::msg::from_xml::xml_to_proto;
 use crate::util::uri_reader::get_binary;
 
 #[derive(Clone, Debug)]
@@ -14,15 +16,28 @@ pub enum Contact {
     Friend(i64),
 }
 
+#[async_recursion]
 pub async fn to_rq_chain(
     client: &Arc<Client>,
     message: Vec<pbbot::Message>,
     contact: Contact,
+    auto_escape: bool,
 ) -> MessageChain {
     let mut chain = MessageChain::default();
-    for element in message {
+    for mut element in message {
         match element.r#type.as_str() {
-            "text" => append_text(&mut chain, element.data),
+            "text" => {
+                if auto_escape {
+                    append_text(&mut chain, element.data)
+                } else {
+                    let text = element.data.remove("text").unwrap_or_default();
+                    if text.len() == 0 {
+                        continue;
+                    }
+                    let ccc = to_rq_chain(client, xml_to_proto(text), contact.clone(), true).await;
+                    chain.0.extend(ccc.0);
+                }
+            }
             "at" => append_at(&mut chain, element.data),
             "face" => append_face(&mut chain, element.data),
             "image" => {

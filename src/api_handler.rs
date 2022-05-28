@@ -40,20 +40,14 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
             .await
             .map(Data::SendGroupMsgResp),
         // Data::SendMsgReq(_) => {}
-        Data::DeleteMsgReq(req) => handle_delete_msg(bot, req)
-            .await
-            .map(Data::DeleteMsgResp),
+        Data::DeleteMsgReq(req) => handle_delete_msg(bot, req).await.map(Data::DeleteMsgResp),
         // Data::GetMsgReq(_) => {}
         // Data::GetForwardMsgReq(_) => {}
-        Data::SendLikeReq(req) => handle_send_like(bot, req)
-            .await
-            .map(Data::SendLikeResp),
+        Data::SendLikeReq(req) => handle_send_like(bot, req).await.map(Data::SendLikeResp),
         Data::SetGroupKickReq(req) => handle_group_kick(bot, req)
             .await
             .map(Data::SetGroupKickResp),
-        Data::SetGroupBanReq(req) => handle_group_ban(bot, req)
-            .await
-            .map(Data::SetGroupBanResp),
+        Data::SetGroupBanReq(req) => handle_group_ban(bot, req).await.map(Data::SetGroupBanResp),
         // Data::SetGroupAnonymousBanReq(_) => {}
         Data::SetGroupWholeBanReq(req) => handle_group_whole_ban(bot, req)
             .await
@@ -94,7 +88,13 @@ pub async fn handle_send_private_msg(
     bot: &Arc<Bot>,
     req: SendPrivateMsgReq,
 ) -> RCResult<SendPrivateMsgResp> {
-    let chain = to_rq_chain(&bot.client, req.message, Contact::Friend(req.user_id)).await;
+    let chain = to_rq_chain(
+        &bot.client,
+        req.message,
+        Contact::Friend(req.user_id),
+        req.auto_escape,
+    )
+    .await;
     let receipt = bot
         .client
         .send_friend_message(req.user_id, chain.clone())
@@ -120,7 +120,13 @@ pub async fn handle_send_group_msg(
     bot: &Arc<Bot>,
     req: SendGroupMsgReq,
 ) -> RCResult<SendGroupMsgResp> {
-    let chain = to_rq_chain(&bot.client, req.message, Contact::Group(req.group_id)).await;
+    let chain = to_rq_chain(
+        &bot.client,
+        req.message,
+        Contact::Group(req.group_id),
+        req.auto_escape,
+    )
+    .await;
     let receipt = bot
         .client
         .send_group_message(req.group_id, chain.clone())
