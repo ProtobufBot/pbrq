@@ -9,6 +9,7 @@ use crate::bot;
 use crate::bot::Bot;
 use crate::idl::pbbot;
 use crate::msg::to_proto_chain;
+use crate::msg::to_xml::proto_to_xml;
 
 pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::frame::Data> {
     match event {
@@ -69,18 +70,20 @@ pub async fn to_proto_group_message(
             rans: message.rands.clone(),
         },
     );
+    let proto_message = to_proto_chain(&client, message.elements);
+    let raw_message = proto_to_xml(proto_message.clone());
     pbbot::GroupMessageEvent {
         time: message.time as i64,
         self_id: client.uin().await,
         post_type: "message".to_string(),
         message_type: "group".to_string(),
         sub_type: "normal".to_string(),
-        message_id, // TODO
+        message_id,
         group_id: message.group_code,
         user_id: message.from_uin,
-        anonymous: None,                           // TODO
-        raw_message: message.elements.to_string(), // TODO
-        message: to_proto_chain(&client, message.elements),
+        anonymous: None, // TODO
+        raw_message,
+        message: proto_message,
         sender: Some(pbbot::group_message_event::Sender {
             user_id: message.from_uin,
             card: message.group_card,
@@ -109,16 +112,18 @@ pub async fn to_proto_private_message(
             rans: message.rands.clone(),
         },
     );
+    let proto_message = to_proto_chain(&client, message.elements);
+    let raw_message = proto_to_xml(proto_message.clone());
     pbbot::PrivateMessageEvent {
         time: message.time as i64,
         self_id: client.uin().await,
         post_type: "message".to_string(),
         message_type: "private".to_string(),
         sub_type: "normal".to_string(),
-        message_id: 0, // TODO
+        message_id,
         user_id: message.from_uin,
-        raw_message: message.elements.to_string(), // TODO
-        message: to_proto_chain(&client, message.elements),
+        raw_message,
+        message: proto_message,
         sender: Some(pbbot::private_message_event::Sender {
             user_id: message.from_uin,
             nickname: message.from_nick,

@@ -10,7 +10,7 @@ pub fn proto_to_xml(s: Vec<pbbot::Message>) -> String {
             let attrs = elem
                 .data
                 .into_iter()
-                .map(|(k, v)| format!("{}=\"{}\"", k, xml::escape::escape_str_attribute(v)))
+                .map(|(k, v)| format!("{}=\"{}\"", k, xml::escape::escape_str_attribute(&v)))
                 .collect::<Vec<String>>()
                 .join(" ");
             format!("<{} {}/>", elem.r#type, attrs)

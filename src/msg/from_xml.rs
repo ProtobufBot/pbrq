@@ -4,7 +4,7 @@ use xml::reader::XmlEvent;
 
 use crate::idl::pbbot;
 
-fn xml_to_proto(s: String) -> Vec<pbbot::Message> {
+pub fn xml_to_proto(s: String) -> Vec<pbbot::Message> {
     let msg = format!("<a>{}</a>", s);
     let reader = xml::reader::EventReader::from_str(&msg);
     let mut output = Vec::new();
