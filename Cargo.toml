@@ -31,6 +31,7 @@ hyper = { version = "0.14", features = ["client", "http1"] }
 hyper-tls = "0.5"
 xml-rs = "0.8"
 async-recursion = "1.0.0"
+tower-http = { version = "0.3.0", features = ["fs"] }
 
 [build-dependencies]
 #lust-build = { version = "*", registry = "crates-byted" }

@@ -3,7 +3,7 @@
 use std::net::SocketAddr;
 
 use axum::{
-    routing::{get, post},
+    routing::{get, get_service, post},
     Router,
 };
 use tracing::Level;
@@ -11,6 +11,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use pbbot_rq::handler::{bot, password, plugins, qrcode};
+use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() {
@@ -67,11 +68,19 @@ async fn main() {
                 .route("/save", post(plugins::save))
                 .route("/list", get(plugins::list))
                 .route("/delete", post(plugins::delete)),
-        );
+        )
+        .fallback(get_service(ServeDir::new("static")).handle_error(handle_error));
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     tracing::info!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+async fn handle_error(_: std::io::Error) -> impl axum::response::IntoResponse {
+    (
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+        "Something went wrong...",
+    )
 }
