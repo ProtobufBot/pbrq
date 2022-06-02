@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use cached::Cached;
+use ricq::structs::GroupMemberPermission;
 
 use crate::bot;
 use crate::bot::Bot;
@@ -56,17 +57,29 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         // Data::SetGroupAnonymousReq(_) => {}
         // Data::SetGroupCardReq(_) => {}
         // Data::SetGroupNameReq(_) => {}
-        // Data::SetGroupLeaveReq(_) => {}
+        Data::SetGroupLeaveReq(req) => handle_group_leave(bot, req)
+            .await
+            .map(Data::SetGroupLeaveResp),
         // Data::SetGroupSpecialTitleReq(_) => {}
         // Data::SetFriendAddRequestReq(_) => {}
         // Data::SetGroupAddRequestReq(_) => {}
         // Data::GetLoginInfoReq(_) => {}
         // Data::GetStrangerInfoReq(_) => {}
-        // Data::GetFriendListReq(_) => {}
-        // Data::GetGroupInfoReq(_) => {}
-        // Data::GetGroupListReq(_) => {}
-        // Data::GetGroupMemberInfoReq(_) => {}
-        // Data::GetGroupMemberListReq(_) => {}
+        Data::GetFriendListReq(req) => handle_get_friend_list(bot, req)
+            .await
+            .map(Data::GetFriendListResp),
+        Data::GetGroupInfoReq(req) => handle_get_group_info(bot, req)
+            .await
+            .map(Data::GetGroupInfoResp),
+        Data::GetGroupListReq(req) => handle_get_group_list(bot, req)
+            .await
+            .map(Data::GetGroupListResp),
+        Data::GetGroupMemberInfoReq(req) => handle_get_group_member_info(bot, req)
+            .await
+            .map(Data::GetGroupMemberInfoResp),
+        Data::GetGroupMemberListReq(req) => handle_get_group_member_list(bot, req)
+            .await
+            .map(Data::GetGroupMemberListResp),
         // Data::GetGroupHonorInfoReq(_) => {}
         // Data::GetCookiesReq(_) => {}
         // Data::GetCsrfTokenReq(_) => {}
@@ -202,4 +215,143 @@ pub async fn handle_group_whole_ban(
 ) -> RCResult<SetGroupWholeBanResp> {
     bot.client.group_mute_all(req.group_id, req.enable).await?;
     Ok(SetGroupWholeBanResp {})
+}
+
+pub async fn handle_group_leave(
+    bot: &Arc<Bot>,
+    req: SetGroupLeaveReq,
+) -> RCResult<SetGroupLeaveResp> {
+    bot.client.group_quit(req.group_id).await?;
+    Ok(SetGroupLeaveResp {})
+}
+
+pub async fn handle_get_friend_list(
+    bot: &Arc<Bot>,
+    _: GetFriendListReq,
+) -> RCResult<GetFriendListResp> {
+    Ok(GetFriendListResp {
+        friend: bot
+            .client
+            .get_friend_list()
+            .await?
+            .friends
+            .into_iter()
+            .map(|f| get_friend_list_resp::Friend {
+                user_id: f.uin,
+                nickname: f.nick,
+                remark: f.remark,
+            })
+            .collect(),
+    })
+}
+
+pub async fn handle_get_group_info(
+    bot: &Arc<Bot>,
+    req: GetGroupInfoReq,
+) -> RCResult<GetGroupInfoResp> {
+    let group = bot
+        .client
+        .get_group_info(req.group_id)
+        .await?
+        .ok_or_else(|| RCError::None("group"))?;
+    Ok(GetGroupInfoResp {
+        group_id: group.code,
+        group_name: group.name,
+        member_count: group.member_count as i32,
+        max_member_count: group.max_member_count as i32,
+    })
+}
+
+pub async fn handle_get_group_list(
+    bot: &Arc<Bot>,
+    _: GetGroupListReq,
+) -> RCResult<GetGroupListResp> {
+    Ok(GetGroupListResp {
+        group: bot
+            .client
+            .get_group_list()
+            .await?
+            .into_iter()
+            .map(|g| get_group_list_resp::Group {
+                group_id: g.code,
+                group_name: g.name,
+                member_count: g.member_count as i32,
+                max_member_count: g.max_member_count as i32,
+            })
+            .collect(),
+    })
+}
+
+pub async fn handle_get_group_member_info(
+    bot: &Arc<Bot>,
+    req: GetGroupMemberInfoReq,
+) -> RCResult<GetGroupMemberInfoResp> {
+    let member = bot
+        .client
+        .get_group_member_info(req.group_id, req.user_id)
+        .await?;
+    Ok(GetGroupMemberInfoResp {
+        group_id: member.group_code,
+        user_id: member.uin,
+        nickname: member.nickname,
+        card: member.card_name,
+        sex: "".into(), // TODO
+        age: 0,
+        area: "".into(),
+        join_time: member.join_time,
+        last_sent_time: member.last_speak_time,
+        level: member.level.to_string(),
+        role: match member.permission {
+            GroupMemberPermission::Owner => "owner",
+            GroupMemberPermission::Administrator => "admin",
+            GroupMemberPermission::Member => "member",
+        }
+        .to_string(),
+        unfriendly: false,
+        title: member.special_title,
+        title_expire_time: member.special_title_expire_time,
+        card_changeable: false,
+    })
+}
+
+pub async fn handle_get_group_member_list(
+    bot: &Arc<Bot>,
+    req: GetGroupMemberListReq,
+) -> RCResult<GetGroupMemberListResp> {
+    let group = bot
+        .client
+        .get_group_info(req.group_id)
+        .await?
+        .ok_or_else(|| RCError::None("group"))?;
+    let members = bot
+        .client
+        .get_group_member_list(req.group_id, group.owner_uin)
+        .await?;
+    Ok(GetGroupMemberListResp {
+        group_member: members
+            .into_iter()
+            .map(|member| get_group_member_list_resp::GroupMember {
+                group_id: member.group_code,
+                user_id: member.uin,
+                nickname: member.nickname,
+                card: member.card_name,
+                sex: "".into(), // TODO
+                age: 0,
+                area: "".into(),
+                join_time: member.join_time,
+                last_sent_time: member.last_speak_time,
+                level: member.level.to_string(),
+                role: match member.permission {
+                    GroupMemberPermission::Owner => "owner",
+                    GroupMemberPermission::Administrator => "admin",
+                    GroupMemberPermission::Member => "member",
+                }
+                .to_string(),
+                unfriendly: false,
+                title: member.special_title,
+                title_expire_time: member.special_title_expire_time,
+                card_changeable: false,
+            })
+            .collect(),
+    })
 }
