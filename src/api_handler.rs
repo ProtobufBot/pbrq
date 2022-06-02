@@ -98,8 +98,7 @@ pub async fn handle_send_private_msg(
     let receipt = bot
         .client
         .send_friend_message(req.user_id, chain.clone())
-        .await
-        .map_err(RCError::RQ)?;
+        .await?;
     let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
     bot.message_cache.write().await.cache_set(
         message_id,
@@ -130,8 +129,7 @@ pub async fn handle_send_group_msg(
     let receipt = bot
         .client
         .send_group_message(req.group_id, chain.clone())
-        .await
-        .map_err(RCError::RQ)?;
+        .await?;
     let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
     bot.message_cache.write().await.cache_set(
         message_id,
@@ -158,8 +156,7 @@ pub async fn handle_delete_msg(bot: &Arc<Bot>, req: DeleteMsgReq) -> RCResult<De
     if let Some(group_code) = message.from_group {
         bot.client
             .recall_group_message(group_code, message.seqs, message.rans)
-            .await
-            .map_err(RCError::RQ)?;
+            .await?;
     } else {
         bot.client
             .recall_friend_message(
@@ -168,25 +165,23 @@ pub async fn handle_delete_msg(bot: &Arc<Bot>, req: DeleteMsgReq) -> RCResult<De
                 message.seqs,
                 message.rans,
             )
-            .await
-            .map_err(RCError::RQ)?;
+            .await?;
     }
     Ok(DeleteMsgResp {})
 }
 
 pub async fn handle_send_like(bot: &Arc<Bot>, req: SendLikeReq) -> RCResult<SendLikeResp> {
+    let summary = bot.client.get_summary_info(req.user_id).await?;
     bot.client
-        .send_like(req.user_id, req.times)
-        .await
-        .map_err(RCError::RQ)?;
+        .send_like(req.user_id, req.times, 1, summary.cookie)
+        .await?;
     Ok(SendLikeResp {})
 }
 
 pub async fn handle_group_kick(bot: &Arc<Bot>, req: SetGroupKickReq) -> RCResult<SetGroupKickResp> {
     bot.client
         .group_kick(req.group_id, vec![req.user_id], "", req.reject_add_request)
-        .await
-        .map_err(RCError::RQ)?;
+        .await?;
     Ok(SetGroupKickResp {})
 }
 
@@ -197,8 +192,7 @@ pub async fn handle_group_ban(bot: &Arc<Bot>, req: SetGroupBanReq) -> RCResult<S
             req.user_id,
             Duration::from_secs(req.duration as u64),
         )
-        .await
-        .map_err(RCError::RQ)?;
+        .await?;
     Ok(SetGroupBanResp {})
 }
 
@@ -206,9 +200,6 @@ pub async fn handle_group_whole_ban(
     bot: &Arc<Bot>,
     req: SetGroupWholeBanReq,
 ) -> RCResult<SetGroupWholeBanResp> {
-    bot.client
-        .group_mute_all(req.group_id, req.enable)
-        .await
-        .map_err(RCError::RQ)?;
+    bot.client.group_mute_all(req.group_id, req.enable).await?;
     Ok(SetGroupWholeBanResp {})
 }
