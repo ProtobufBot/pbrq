@@ -6,12 +6,12 @@ use axum::{
     routing::{get, get_service, post},
     Router,
 };
+use tower_http::services::ServeDir;
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use pbbot_rq::handler::{bot, password, plugins, qrcode};
-use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() {
@@ -71,7 +71,7 @@ async fn main() {
                 .route("/delete", post(plugins::delete)),
         )
         .fallback(get_service(ServeDir::new("static")).handle_error(handle_error));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::info!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
