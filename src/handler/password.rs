@@ -41,6 +41,11 @@ pub struct SubmitTicketReq {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct RequestSmsReq {
+    pub uin: i64,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SubmitSmsReq {
     pub uin: i64,
     pub sms: String,
@@ -146,15 +151,21 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
 }
 
 pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<PasswordLoginResp>> {
-    let mut cli = CLIENTS.get_mut(&req.uin).ok_or(RCError::ClientNotFound)?;
-
-    let mut resp = cli
+    let mut resp = CLIENTS
+        .get(&req.uin)
+        .ok_or(RCError::ClientNotFound)?
         .client
         .submit_ticket(&req.ticket)
         .await
         .map_err(RCError::RQ)?;
     if let LoginResponse::DeviceLockLogin(_) = resp {
-        resp = cli.client.device_lock_login().await.map_err(RCError::RQ)?;
+        resp = CLIENTS
+            .get(&req.uin)
+            .ok_or(RCError::ClientNotFound)?
+            .client
+            .device_lock_login()
+            .await
+            .map_err(RCError::RQ)?;
     }
     if let LoginResponse::Success(_) = resp {
         if let Some((uin, client)) = CLIENTS.remove(&req.uin) {
@@ -170,24 +181,49 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
             tracing::warn!("failed to remove client: {}", req.uin);
         }
     } else {
-        cli.login_response = resp.clone();
+        CLIENTS
+            .get_mut(&req.uin)
+            .ok_or(RCError::ClientNotFound)?
+            .login_response = resp.clone();
     }
     Ok(Json(PasswordLoginResp::from(resp)))
 }
 
-pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
-    let mut cli = CLIENTS.get_mut(&req.uin).ok_or(RCError::ClientNotFound)?;
+pub async fn request_sms(Json(req): Json<RequestSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
+    let resp = CLIENTS
+        .get(&req.uin)
+        .ok_or(RCError::ClientNotFound)?
+        .client
+        .request_sms()
+        .await
+        .map_err(RCError::RQ)?;
+    CLIENTS
+        .get_mut(&req.uin)
+        .ok_or(RCError::ClientNotFound)?
+        .login_response = resp.clone();
+    Ok(Json(PasswordLoginResp::from(resp)))
+}
 
-    let mut resp = cli
+pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
+    let mut resp = CLIENTS
+        .get(&req.uin)
+        .ok_or(RCError::ClientNotFound)?
         .client
         .submit_sms_code(&req.sms)
         .await
         .map_err(RCError::RQ)?;
     if let LoginResponse::DeviceLockLogin(_) = resp {
-        resp = cli.client.device_lock_login().await.map_err(RCError::RQ)?;
+        resp = CLIENTS
+            .get(&req.uin)
+            .ok_or(RCError::ClientNotFound)?
+            .client
+            .device_lock_login()
+            .await
+            .map_err(RCError::RQ)?;
     }
     if let LoginResponse::Success(_) = resp {
-        if let Some((uin, client)) = CLIENTS.remove(&req.uin) {
+        let cli = CLIENTS.remove(&req.uin);
+        if let Some((uin, client)) = cli {
             tracing::info!("login success: {}", uin);
             on_login(
                 client.client,
@@ -200,7 +236,10 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
             tracing::warn!("failed to remove client: {}", req.uin);
         }
     } else {
-        cli.login_response = resp.clone();
+        CLIENTS
+            .get_mut(&req.uin)
+            .ok_or(RCError::ClientNotFound)?
+            .login_response = resp.clone();
     }
     Ok(Json(PasswordLoginResp::from(resp)))
 }

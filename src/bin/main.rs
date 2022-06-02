@@ -50,6 +50,7 @@ async fn main() {
                     "/password",
                     Router::new()
                         .route("/create", post(password::login))
+                        .route("/request_sms", post(password::request_sms))
                         .route("/submit_sms", post(password::submit_sms))
                         .route("/submit_ticket", post(password::submit_ticket))
                         .route("/list", get(password::list))
