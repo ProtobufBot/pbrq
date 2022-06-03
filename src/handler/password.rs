@@ -91,8 +91,12 @@ impl From<LoginResponse> for PasswordLoginResp {
             LoginResponse::DeviceLockLogin(_) => {
                 resp.state = "device_lock_login".into();
             }
-            LoginResponse::UnknownStatus(_) => {
+            LoginResponse::UnknownStatus(status) => {
                 resp.state = "unknown".into();
+                resp.message = Some(format!(
+                    "status: {} message: {}",
+                    status.status, status.message
+                ));
             }
         };
         resp
