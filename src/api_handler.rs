@@ -53,7 +53,9 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         Data::SetGroupWholeBanReq(req) => handle_group_whole_ban(bot, req)
             .await
             .map(Data::SetGroupWholeBanResp),
-        // Data::SetGroupAdminReq(_) => {}
+        Data::SetGroupAdminReq(req) => handle_set_group_admin(bot, req)
+            .await
+            .map(Data::SetGroupAdminResp),
         // Data::SetGroupAnonymousReq(_) => {}
         Data::SetGroupCardReq(req) => handle_set_group_card(bot, req)
             .await
@@ -64,11 +66,17 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         Data::SetGroupLeaveReq(req) => handle_group_leave(bot, req)
             .await
             .map(Data::SetGroupLeaveResp),
-        // Data::SetGroupSpecialTitleReq(_) => {}
+        Data::SetGroupSpecialTitleReq(req) => handle_set_group_special_title(bot, req)
+            .await
+            .map(Data::SetGroupSpecialTitleResp),
         // Data::SetFriendAddRequestReq(_) => {}
         // Data::SetGroupAddRequestReq(_) => {}
-        // Data::GetLoginInfoReq(_) => {}
-        // Data::GetStrangerInfoReq(_) => {}
+        Data::GetLoginInfoReq(req) => handle_get_login_info(bot, req)
+            .await
+            .map(Data::GetLoginInfoResp),
+        Data::GetStrangerInfoReq(req) => handle_get_stranger_info(bot, req)
+            .await
+            .map(Data::GetStrangerInfoResp),
         Data::GetFriendListReq(req) => handle_get_friend_list(bot, req)
             .await
             .map(Data::GetFriendListResp),
@@ -221,6 +229,16 @@ pub async fn handle_group_whole_ban(
     Ok(SetGroupWholeBanResp {})
 }
 
+pub async fn handle_set_group_admin(
+    bot: &Arc<Bot>,
+    req: SetGroupAdminReq,
+) -> RCResult<SetGroupAdminResp> {
+    bot.client
+        .group_set_admin(req.group_id, req.user_id, req.enable)
+        .await?;
+    Ok(SetGroupAdminResp {})
+}
+
 pub async fn handle_set_group_card(
     bot: &Arc<Bot>,
     req: SetGroupCardReq,
@@ -246,6 +264,42 @@ pub async fn handle_group_leave(
 ) -> RCResult<SetGroupLeaveResp> {
     bot.client.group_quit(req.group_id).await?;
     Ok(SetGroupLeaveResp {})
+}
+
+pub async fn handle_set_group_special_title(
+    bot: &Arc<Bot>,
+    req: SetGroupSpecialTitleReq,
+) -> RCResult<SetGroupSpecialTitleResp> {
+    // TODO duration 无效
+    bot.client
+        .group_edit_special_title(req.group_id, req.group_id, req.special_title)
+        .await?;
+    Ok(SetGroupSpecialTitleResp {})
+}
+
+pub async fn handle_get_login_info(
+    bot: &Arc<Bot>,
+    _: GetLoginInfoReq,
+) -> RCResult<GetLoginInfoResp> {
+    Ok(GetLoginInfoResp {
+        user_id: bot.client.uin().await,
+        nickname: bot.client.account_info.read().await.nickname.clone(),
+    })
+}
+
+pub async fn handle_get_stranger_info(
+    bot: &Arc<Bot>,
+    req: GetStrangerInfoReq,
+) -> RCResult<GetStrangerInfoResp> {
+    let info = bot.client.get_summary_info(req.user_id).await?;
+    Ok(GetStrangerInfoResp {
+        user_id: info.uin,
+        nickname: info.nickname,
+        sex: info.sex.to_string(), // TODO ?
+        age: info.age as i32,
+        level: info.level,
+        login_days: info.login_days,
+    })
 }
 
 pub async fn handle_get_friend_list(
