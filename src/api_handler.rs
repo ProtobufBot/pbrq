@@ -55,8 +55,12 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
             .map(Data::SetGroupWholeBanResp),
         // Data::SetGroupAdminReq(_) => {}
         // Data::SetGroupAnonymousReq(_) => {}
-        // Data::SetGroupCardReq(_) => {}
-        // Data::SetGroupNameReq(_) => {}
+        Data::SetGroupCardReq(req) => handle_set_group_card(bot, req)
+            .await
+            .map(Data::SetGroupCardResp),
+        Data::SetGroupNameReq(req) => handle_set_group_name(bot, req)
+            .await
+            .map(Data::SetGroupNameResp),
         Data::SetGroupLeaveReq(req) => handle_group_leave(bot, req)
             .await
             .map(Data::SetGroupLeaveResp),
@@ -215,6 +219,25 @@ pub async fn handle_group_whole_ban(
 ) -> RCResult<SetGroupWholeBanResp> {
     bot.client.group_mute_all(req.group_id, req.enable).await?;
     Ok(SetGroupWholeBanResp {})
+}
+
+pub async fn handle_set_group_card(
+    bot: &Arc<Bot>,
+    req: SetGroupCardReq,
+) -> RCResult<SetGroupCardResp> {
+    bot.client
+        .edit_group_member_card(req.group_id, req.user_id, req.card)
+        .await?;
+    Ok(SetGroupCardResp {})
+}
+pub async fn handle_set_group_name(
+    bot: &Arc<Bot>,
+    req: SetGroupNameReq,
+) -> RCResult<SetGroupNameResp> {
+    bot.client
+        .update_group_name(req.group_id, req.group_name)
+        .await?;
+    Ok(SetGroupNameResp {})
 }
 
 pub async fn handle_group_leave(
