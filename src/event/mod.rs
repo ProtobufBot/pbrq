@@ -1,15 +1,14 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use cached::Cached;
 use ricq::client::event::{FriendMessageEvent, GroupMessageEvent};
 use ricq::handler::QEvent;
 
-use crate::bot;
 use crate::bot::Bot;
 use crate::idl::pbbot;
+use crate::idl::pbbot::MessageReceipt;
 use crate::msg::to_proto_chain;
 use crate::msg::to_xml::proto_to_xml;
+use crate::plugin::pb_to_bytes::PbToBytes;
 
 pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::frame::Data> {
     match event {
@@ -53,23 +52,19 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
 }
 
 pub async fn to_proto_group_message(
-    bot: &Arc<Bot>,
+    _: &Arc<Bot>,
     event: GroupMessageEvent,
 ) -> pbbot::GroupMessageEvent {
     let client = event.client;
     let message = event.message;
-    let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
-    bot.message_cache.write().await.cache_set(
-        message_id,
-        bot::Message {
-            time: message.time,
-            from_uin: message.from_uin,
-            from_group: Some(message.group_code),
-            elements: message.elements.clone(),
-            seqs: message.seqs.clone(),
-            rans: message.rands.clone(),
-        },
-    );
+    let message_id = MessageReceipt {
+        sender_id: message.from_uin,
+        time: message.time as i64,
+        seqs: message.seqs,
+        rands: message.rands,
+        group_id: message.group_code,
+    }
+    .to_bytes();
     let proto_message = to_proto_chain(&client, message.elements);
     let raw_message = proto_to_xml(proto_message.clone());
     pbbot::GroupMessageEvent {
@@ -95,23 +90,19 @@ pub async fn to_proto_group_message(
 }
 
 pub async fn to_proto_private_message(
-    bot: &Arc<Bot>,
+    _: &Arc<Bot>,
     event: FriendMessageEvent,
 ) -> pbbot::PrivateMessageEvent {
     let client = event.client;
     let message = event.message;
-    let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
-    bot.message_cache.write().await.cache_set(
-        message_id,
-        bot::Message {
-            time: message.time,
-            from_uin: message.from_uin,
-            from_group: None,
-            elements: message.elements.clone(),
-            seqs: message.seqs.clone(),
-            rans: message.rands.clone(),
-        },
-    );
+    let message_id = MessageReceipt {
+        sender_id: message.from_uin,
+        time: message.time as i64,
+        seqs: message.seqs,
+        rands: message.rands,
+        group_id: 0,
+    }
+    .to_bytes();
     let proto_message = to_proto_chain(&client, message.elements);
     let raw_message = proto_to_xml(proto_message.clone());
     pbbot::PrivateMessageEvent {

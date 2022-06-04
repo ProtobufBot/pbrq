@@ -1,13 +1,11 @@
 use std::collections::HashMap;
-use std::sync::atomic::AtomicI32;
 use std::sync::Arc;
 use std::time::Duration;
 
 use ricq::client::NetworkStatus;
 use ricq::handler::QEvent;
-use ricq::msg::MessageChain;
 use ricq::Client;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 
 use crate::event::to_proto_event;
 use crate::plugin::conn::PluginConnection;
@@ -15,22 +13,10 @@ use crate::plugin::Plugin;
 
 pub mod bots;
 
-#[derive(Debug, Clone, Default)]
-pub struct Message {
-    pub time: i32,
-    pub from_uin: i64,
-    pub from_group: Option<i64>,
-    pub elements: MessageChain,
-    pub seqs: Vec<i32>,
-    pub rans: Vec<i32>,
-}
-
 pub struct Bot {
     pub client: Arc<Client>,
     pub plugin_connections: HashMap<String, Arc<PluginConnection>>,
     pub stop_channel: broadcast::Sender<()>,
-    pub message_id: AtomicI32,
-    pub message_cache: RwLock<cached::SizedCache<i32, Message>>,
 }
 
 impl Bot {
@@ -43,8 +29,6 @@ impl Bot {
                 .into_iter()
                 .map(|p| (p.name.clone(), Arc::new(PluginConnection::new(p))))
                 .collect(),
-            message_id: Default::default(),
-            message_cache: RwLock::new(cached::SizedCache::with_size(1024)),
         }
     }
 

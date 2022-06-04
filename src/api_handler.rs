@@ -1,16 +1,14 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
-use cached::Cached;
 use ricq::structs::GroupMemberPermission;
 
-use crate::bot;
 use crate::bot::Bot;
 use crate::error::{RCError, RCResult};
 use crate::idl::pbbot::frame::Data;
 use crate::idl::pbbot::*;
 use crate::msg::{to_rq_chain, Contact};
+use crate::plugin::pb_to_bytes::PbToBytes;
 
 pub async fn handle_api_frame(bot: &Arc<Bot>, req_frame: Frame) -> Frame {
     let bot_id = req_frame.bot_id;
@@ -124,19 +122,14 @@ pub async fn handle_send_private_msg(
         .client
         .send_friend_message(req.user_id, chain.clone())
         .await?;
-    let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
-    bot.message_cache.write().await.cache_set(
-        message_id,
-        bot::Message {
-            time: receipt.time as i32,
-            from_uin: bot.client.uin().await,
-            from_group: None,
-            elements: chain,
-            seqs: receipt.seqs,
-            rans: receipt.rands,
-        },
-    );
-
+    let message_id = MessageReceipt {
+        sender_id: bot.client.uin().await,
+        time: receipt.time,
+        seqs: receipt.seqs,
+        rands: receipt.rands,
+        group_id: 0,
+    }
+    .to_bytes();
     Ok(SendPrivateMsgResp { message_id })
 }
 
@@ -155,41 +148,26 @@ pub async fn handle_send_group_msg(
         .client
         .send_group_message(req.group_id, chain.clone())
         .await?;
-    let message_id = bot.message_id.fetch_add(1, Ordering::Relaxed);
-    bot.message_cache.write().await.cache_set(
-        message_id,
-        bot::Message {
-            time: receipt.time as i32,
-            from_uin: bot.client.uin().await,
-            from_group: Some(req.group_id),
-            elements: chain,
-            seqs: receipt.seqs,
-            rans: receipt.rands,
-        },
-    );
+    let message_id = MessageReceipt {
+        sender_id: bot.client.uin().await,
+        time: receipt.time,
+        seqs: receipt.seqs,
+        rands: receipt.rands,
+        group_id: req.group_id,
+    }
+    .to_bytes();
     Ok(SendGroupMsgResp { message_id })
 }
 
 pub async fn handle_delete_msg(bot: &Arc<Bot>, req: DeleteMsgReq) -> RCResult<DeleteMsgResp> {
-    let message = bot
-        .message_cache
-        .write()
-        .await
-        .cache_get(&req.message_id)
-        .cloned()
-        .ok_or(RCError::None("message_id"))?;
-    if let Some(group_code) = message.from_group {
+    let receipt = MessageReceipt::from_bytes(&req.message_id)?;
+    if receipt.group_id != 0 {
         bot.client
-            .recall_group_message(group_code, message.seqs, message.rans)
+            .recall_group_message(receipt.group_id, receipt.seqs, receipt.rands)
             .await?;
     } else {
         bot.client
-            .recall_friend_message(
-                message.from_uin,
-                message.time as i64,
-                message.seqs,
-                message.rans,
-            )
+            .recall_friend_message(receipt.sender_id, receipt.time, receipt.seqs, receipt.rands)
             .await?;
     }
     Ok(DeleteMsgResp {})
