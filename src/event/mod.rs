@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ricq::client::event::{FriendMessageEvent, GroupLeaveEvent, GroupMessageEvent};
+use ricq::client::event::{FriendMessageEvent, GroupLeaveEvent, GroupMessageEvent, NewMemberEvent};
 use ricq::handler::QEvent;
 
 use crate::bot::Bot;
@@ -37,7 +37,16 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         // QEvent::GroupRequest(_) => {}
         // QEvent::SelfInvited(_) => {}
         // QEvent::FriendRequest(_) => {}
-        // QEvent::NewMember(_) => {}
+        QEvent::NewMember(e) => {
+            tracing::info!(
+                "NEW_MEMBER (GROUP={}): {}",
+                e.new_member.group_code,
+                e.new_member.member_uin
+            );
+            Some(pbbot::frame::Data::GroupIncreaseNoticeEvent(
+                to_proto_group_increase(bot, e).await,
+            ))
+        }
         // QEvent::GroupMute(_) => {}
         // QEvent::FriendMessageRecall(_) => {}
         // QEvent::GroupMessageRecall(_) => {}
@@ -143,7 +152,7 @@ pub async fn to_proto_group_decrease(
     pbbot::GroupDecreaseNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
-        post_type: "message".to_string(),
+        post_type: "notice".to_string(),
         notice_type: "group_decrease".to_string(),
         sub_type: if leave.operator_uin.is_some() {
             "kick"
@@ -154,6 +163,25 @@ pub async fn to_proto_group_decrease(
         group_id: leave.group_code,
         operator_id: leave.operator_uin.unwrap_or_default(),
         user_id: leave.member_uin,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_group_increase(
+    _: &Arc<Bot>,
+    event: NewMemberEvent,
+) -> pbbot::GroupIncreaseNoticeEvent {
+    let client = event.client;
+    let new_mem = event.new_member;
+    pbbot::GroupIncreaseNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "group_increase".to_string(),
+        sub_type: "".into(),
+        group_id: new_mem.group_code,
+        operator_id: 0,
+        user_id: new_mem.member_uin,
         extra: Default::default(),
     }
 }
