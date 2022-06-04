@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ricq::client::event::{FriendMessageEvent, GroupMessageEvent};
+use ricq::client::event::{FriendMessageEvent, GroupLeaveEvent, GroupMessageEvent};
 use ricq::handler::QEvent;
 
 use crate::bot::Bot;
@@ -42,7 +42,16 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         // QEvent::FriendMessageRecall(_) => {}
         // QEvent::GroupMessageRecall(_) => {}
         // QEvent::NewFriend(_) => {}
-        // QEvent::GroupLeave(_) => {}
+        QEvent::GroupLeave(e) => {
+            tracing::info!(
+                "GROUP_LEAVE (GROUP={}): {}",
+                e.leave.group_code,
+                e.leave.member_uin
+            );
+            Some(pbbot::frame::Data::GroupDecreaseNoticeEvent(
+                to_proto_group_decrease(bot, e).await,
+            ))
+        }
         // QEvent::FriendPoke(_) => {}
         // QEvent::GroupNameUpdate(_) => {}
         // QEvent::DeleteFriend(_) => {}
@@ -121,6 +130,30 @@ pub async fn to_proto_private_message(
             ..Default::default()
         }),
         font: 0,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_group_decrease(
+    _: &Arc<Bot>,
+    event: GroupLeaveEvent,
+) -> pbbot::GroupDecreaseNoticeEvent {
+    let client = event.client;
+    let leave = event.leave;
+    pbbot::GroupDecreaseNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "message".to_string(),
+        notice_type: "group_decrease".to_string(),
+        sub_type: if leave.operator_uin.is_some() {
+            "kick"
+        } else {
+            "leave"
+        }
+        .to_string(),
+        group_id: leave.group_code,
+        operator_id: leave.operator_uin.unwrap_or_default(),
+        user_id: leave.member_uin,
         extra: Default::default(),
     }
 }
