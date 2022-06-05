@@ -67,8 +67,12 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         Data::SetGroupSpecialTitleReq(req) => handle_set_group_special_title(bot, req)
             .await
             .map(Data::SetGroupSpecialTitleResp),
-        // Data::SetFriendAddRequestReq(_) => {}
-        // Data::SetGroupAddRequestReq(_) => {}
+        Data::SetFriendAddRequestReq(req) => handle_set_friend_add_request(bot, req)
+            .await
+            .map(Data::SetFriendAddRequestResp),
+        Data::SetGroupAddRequestReq(req) => handle_set_group_add_request(bot, req)
+            .await
+            .map(Data::SetGroupAddRequestResp),
         Data::GetLoginInfoReq(req) => handle_get_login_info(bot, req)
             .await
             .map(Data::GetLoginInfoResp),
@@ -448,7 +452,7 @@ pub async fn handle_set_group_add_request(
 pub async fn handle_set_friend_add_request(
     bot: &Arc<Bot>,
     req: SetFriendAddRequestReq,
-) -> RCResult<SetGroupAddRequestResp> {
+) -> RCResult<SetFriendAddRequestResp> {
     let flags: Vec<&str> = req.flag.split(':').collect();
     if flags.len() < 2 {
         return Err(RCError::None("msg_seq"));
@@ -462,5 +466,5 @@ pub async fn handle_set_friend_add_request(
     bot.client
         .solve_friend_system_message(msg_seq, req_uin, req.approve)
         .await?;
-    Ok(SetGroupAddRequestResp {})
+    Ok(SetFriendAddRequestResp {})
 }
