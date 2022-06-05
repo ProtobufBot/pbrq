@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use ricq::client::event::{
     FriendMessageEvent, FriendMessageRecallEvent, FriendRequestEvent, GroupLeaveEvent,
-    GroupMessageEvent, GroupMessageRecallEvent, GroupMuteEvent, GroupRequestEvent, NewFriendEvent,
-    NewMemberEvent,
+    GroupMessageEvent, GroupMessageRecallEvent, GroupMuteEvent, GroupRequestEvent,
+    MemberPermissionChangeEvent, NewFriendEvent, NewMemberEvent, SelfInvitedEvent,
 };
 use ricq::handler::QEvent;
+use ricq::structs::GroupMemberPermission;
 
 use crate::bot::Bot;
 use crate::idl::pbbot;
@@ -36,7 +37,6 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
                 to_proto_private_message(bot, e).await,
             ))
         }
-        // QEvent::SelfGroupMessage(_) => {}
         // QEvent::TempMessage(_) => {}
         QEvent::GroupRequest(e) => {
             tracing::info!(
@@ -48,7 +48,16 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
                 to_proto_group_request(bot, e).await,
             ))
         }
-        // QEvent::SelfInvited(_) => {}
+        QEvent::SelfInvited(e) => {
+            tracing::info!(
+                "SELF_INVITED (GROUP={}): {}",
+                e.request.group_code,
+                e.request.invitor_uin
+            );
+            Some(pbbot::frame::Data::GroupRequestEvent(
+                to_proto_self_group_request(bot, e).await,
+            ))
+        }
         QEvent::FriendRequest(e) => {
             tracing::info!(
                 "FRIEND_REQUEST (UIN={}): {}",
@@ -118,7 +127,17 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         // QEvent::FriendPoke(_) => {}
         // QEvent::GroupNameUpdate(_) => {}
         // QEvent::DeleteFriend(_) => {}
-        // QEvent::MemberPermissionChange(_) => {}
+        QEvent::MemberPermissionChange(e) => {
+            tracing::info!(
+                "PERMISSION_CHANGE (GROUP={}): {} {:?}",
+                e.change.group_code,
+                e.change.member_uin,
+                e.change.new_permission
+            );
+            Some(pbbot::frame::Data::GroupAdminNoticeEvent(
+                to_proto_group_admin_notice(bot, e).await,
+            ))
+        }
         _ => None,
     }
 }
@@ -343,6 +362,33 @@ pub async fn to_proto_group_request(
     }
 }
 
+pub async fn to_proto_self_group_request(
+    _: &Arc<Bot>,
+    event: SelfInvitedEvent,
+) -> pbbot::GroupRequestEvent {
+    let client = event.client;
+    let request = event.request;
+    let flag = format!(
+        "{}:{}:{}",
+        request.group_code,
+        client.uin().await,
+        request.msg_seq
+    );
+
+    pbbot::GroupRequestEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "request".to_string(),
+        request_type: "group".to_string(),
+        sub_type: "is_invite".into(),
+        group_id: request.group_code,
+        user_id: client.uin().await,
+        comment: "".into(),
+        flag,
+        extra: Default::default(),
+    }
+}
+
 pub async fn to_proto_friend_request(
     _: &Arc<Bot>,
     event: FriendRequestEvent,
@@ -359,6 +405,30 @@ pub async fn to_proto_friend_request(
         user_id: request.req_uin,
         comment: request.message,
         flag,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_group_admin_notice(
+    _: &Arc<Bot>,
+    event: MemberPermissionChangeEvent,
+) -> pbbot::GroupAdminNoticeEvent {
+    let client = event.client;
+    let change = event.change;
+
+    pbbot::GroupAdminNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "group_admin".to_string(),
+        sub_type: if matches!(change.new_permission, GroupMemberPermission::Administrator) {
+            "set"
+        } else {
+            "unset"
+        }
+        .to_string(),
+        group_id: change.group_code,
+        user_id: change.member_uin,
         extra: Default::default(),
     }
 }
