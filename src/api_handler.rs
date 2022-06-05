@@ -308,7 +308,7 @@ pub async fn handle_get_group_info(
         .client
         .get_group_info(req.group_id)
         .await?
-        .ok_or_else(|| RCError::None("group"))?;
+        .ok_or(RCError::None("group"))?;
     Ok(GetGroupInfoResp {
         group_id: group.code,
         group_name: group.name,
@@ -377,7 +377,7 @@ pub async fn handle_get_group_member_list(
         .client
         .get_group_info(req.group_id)
         .await?
-        .ok_or_else(|| RCError::None("group"))?;
+        .ok_or(RCError::None("group"))?;
     let members = bot
         .client
         .get_group_member_list(req.group_id, group.owner_uin)

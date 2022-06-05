@@ -31,7 +31,7 @@ pub async fn to_rq_chain(
                     append_text(&mut chain, element.data)
                 } else {
                     let text = element.data.remove("text").unwrap_or_default();
-                    if text.len() == 0 {
+                    if text.is_empty() {
                         continue;
                     }
                     let ccc = to_rq_chain(client, xml_to_proto(text), contact.clone(), true).await;
