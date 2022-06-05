@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use ricq::client::event::{
@@ -385,7 +386,7 @@ pub async fn to_proto_self_group_request(
         user_id: client.uin().await,
         comment: "".into(),
         flag,
-        extra: Default::default(),
+        extra: HashMap::from([("invitor_uin".to_string(), request.invitor_uin.to_string())]),
     }
 }
 
