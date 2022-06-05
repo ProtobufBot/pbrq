@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use ricq::client::event::{FriendMessageEvent, GroupLeaveEvent, GroupMessageEvent, NewMemberEvent};
+use ricq::client::event::{
+    FriendMessageEvent, FriendMessageRecallEvent, GroupLeaveEvent, GroupMessageEvent,
+    GroupMessageRecallEvent, GroupMuteEvent, NewFriendEvent, NewMemberEvent,
+};
 use ricq::handler::QEvent;
 
 use crate::bot::Bot;
@@ -47,10 +50,42 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
                 to_proto_group_increase(bot, e).await,
             ))
         }
-        // QEvent::GroupMute(_) => {}
-        // QEvent::FriendMessageRecall(_) => {}
-        // QEvent::GroupMessageRecall(_) => {}
-        // QEvent::NewFriend(_) => {}
+        QEvent::GroupMute(e) => {
+            tracing::info!(
+                "GROUP_MUTE (GROUP={}): {}",
+                e.group_mute.group_code,
+                e.group_mute.target_uin
+            );
+            Some(pbbot::frame::Data::GroupBanNoticeEvent(
+                to_proto_group_ban(bot, e).await,
+            ))
+        }
+        QEvent::FriendMessageRecall(e) => {
+            tracing::info!(
+                "FRIEND_RECALL (FRIEND={}): {}",
+                e.recall.friend_uin,
+                e.recall.msg_seq
+            );
+            Some(pbbot::frame::Data::FriendRecallNoticeEvent(
+                to_proto_friend_recall(bot, e).await,
+            ))
+        }
+        QEvent::GroupMessageRecall(e) => {
+            tracing::info!(
+                "GROUP_RECALL (GROUP={}): {}",
+                e.recall.group_code,
+                e.recall.msg_seq
+            );
+            Some(pbbot::frame::Data::GroupRecallNoticeEvent(
+                to_proto_group_recall(bot, e).await,
+            ))
+        }
+        QEvent::NewFriend(e) => {
+            tracing::info!("NEW_FRIEND (FRIEND={}): {}", e.friend.uin, e.friend.nick);
+            Some(pbbot::frame::Data::FriendAddNoticeEvent(
+                to_proto_friend_add(bot, e).await,
+            ))
+        }
         QEvent::GroupLeave(e) => {
             tracing::info!(
                 "GROUP_LEAVE (GROUP={}): {}",
@@ -182,6 +217,71 @@ pub async fn to_proto_group_increase(
         group_id: new_mem.group_code,
         operator_id: 0,
         user_id: new_mem.member_uin,
+        extra: Default::default(),
+    }
+}
+pub async fn to_proto_group_ban(_: &Arc<Bot>, event: GroupMuteEvent) -> pbbot::GroupBanNoticeEvent {
+    let client = event.client;
+    let mute = event.group_mute;
+    pbbot::GroupBanNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "group_ban".to_string(),
+        sub_type: "".into(),
+        group_id: mute.group_code,
+        operator_id: mute.operator_uin,
+        user_id: mute.target_uin,
+        duration: mute.time as i64,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_friend_recall(
+    _: &Arc<Bot>,
+    event: FriendMessageRecallEvent,
+) -> pbbot::FriendRecallNoticeEvent {
+    let client = event.client;
+    pbbot::FriendRecallNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "friend_recall".to_string(),
+        user_id: event.recall.friend_uin,
+        message_id: event.recall.msg_seq,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_group_recall(
+    _: &Arc<Bot>,
+    event: GroupMessageRecallEvent,
+) -> pbbot::GroupRecallNoticeEvent {
+    let client = event.client;
+    pbbot::GroupRecallNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "group_recall".to_string(),
+        group_id: event.recall.group_code,
+        user_id: event.recall.author_uin,
+        operator_id: event.recall.operator_uin,
+        message_id: event.recall.msg_seq,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_friend_add(
+    _: &Arc<Bot>,
+    event: NewFriendEvent,
+) -> pbbot::FriendAddNoticeEvent {
+    let client = event.client;
+    pbbot::FriendAddNoticeEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "notice".to_string(),
+        notice_type: "friend_add".to_string(),
+        user_id: event.friend.uin,
         extra: Default::default(),
     }
 }
