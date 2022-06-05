@@ -410,3 +410,57 @@ pub async fn handle_get_group_member_list(
             .collect(),
     })
 }
+
+pub async fn handle_set_group_add_request(
+    bot: &Arc<Bot>,
+    req: SetGroupAddRequestReq,
+) -> RCResult<SetGroupAddRequestResp> {
+    let flags: Vec<&str> = req.flag.split(':').collect();
+    if flags.len() < 3 {
+        return Err(RCError::None("msg_seq"));
+    }
+    let group_code: i64 = flags[0]
+        .parse()
+        .map_err(|_| RCError::Other("failed to parse group_code".into()))?;
+    let req_uin: i64 = flags[1]
+        .parse()
+        .map_err(|_| RCError::Other("failed to parse uin".into()))?;
+    let msg_seq: i64 = flags[2]
+        .parse()
+        .map_err(|_| RCError::Other("failed to parse msg_seq".into()))?;
+    let is_invite = req.sub_type.contains("is_invite");
+    let suspicious = req.sub_type.contains("suspicious");
+    bot.client
+        .solve_group_system_message(
+            msg_seq,
+            req_uin,
+            group_code,
+            suspicious,
+            is_invite,
+            req.approve,
+            false,
+            req.reason,
+        )
+        .await?;
+    Ok(SetGroupAddRequestResp {})
+}
+
+pub async fn handle_set_friend_add_request(
+    bot: &Arc<Bot>,
+    req: SetFriendAddRequestReq,
+) -> RCResult<SetGroupAddRequestResp> {
+    let flags: Vec<&str> = req.flag.split(':').collect();
+    if flags.len() < 2 {
+        return Err(RCError::None("msg_seq"));
+    }
+    let req_uin: i64 = flags[0]
+        .parse()
+        .map_err(|_| RCError::Other("failed to parse req_uin".into()))?;
+    let msg_seq: i64 = flags[1]
+        .parse()
+        .map_err(|_| RCError::Other("failed to parse msg_seq".into()))?;
+    bot.client
+        .solve_friend_system_message(msg_seq, req_uin, req.approve)
+        .await?;
+    Ok(SetGroupAddRequestResp {})
+}

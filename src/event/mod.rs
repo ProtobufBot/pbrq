@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use ricq::client::event::{
-    FriendMessageEvent, FriendMessageRecallEvent, GroupLeaveEvent, GroupMessageEvent,
-    GroupMessageRecallEvent, GroupMuteEvent, NewFriendEvent, NewMemberEvent,
+    FriendMessageEvent, FriendMessageRecallEvent, FriendRequestEvent, GroupLeaveEvent,
+    GroupMessageEvent, GroupMessageRecallEvent, GroupMuteEvent, GroupRequestEvent, NewFriendEvent,
+    NewMemberEvent,
 };
 use ricq::handler::QEvent;
 
@@ -37,9 +38,27 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         }
         // QEvent::SelfGroupMessage(_) => {}
         // QEvent::TempMessage(_) => {}
-        // QEvent::GroupRequest(_) => {}
+        QEvent::GroupRequest(e) => {
+            tracing::info!(
+                "GROUP_REQUEST (GROUP={}): {}",
+                e.request.group_code,
+                e.request.req_uin
+            );
+            Some(pbbot::frame::Data::GroupRequestEvent(
+                to_proto_group_request(bot, e).await,
+            ))
+        }
         // QEvent::SelfInvited(_) => {}
-        // QEvent::FriendRequest(_) => {}
+        QEvent::FriendRequest(e) => {
+            tracing::info!(
+                "FRIEND_REQUEST (UIN={}): {}",
+                e.request.req_uin,
+                e.request.message
+            );
+            Some(pbbot::frame::Data::FriendRequestEvent(
+                to_proto_friend_request(bot, e).await,
+            ))
+        }
         QEvent::NewMember(e) => {
             tracing::info!(
                 "NEW_MEMBER (GROUP={}): {}",
@@ -282,6 +301,64 @@ pub async fn to_proto_friend_add(
         post_type: "notice".to_string(),
         notice_type: "friend_add".to_string(),
         user_id: event.friend.uin,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_group_request(
+    _: &Arc<Bot>,
+    event: GroupRequestEvent,
+) -> pbbot::GroupRequestEvent {
+    let client = event.client;
+    let request = event.request;
+    let flag = format!(
+        "{}:{}:{}",
+        request.group_code, request.req_uin, request.msg_seq
+    );
+    let sub_type = format!(
+        "{}{}",
+        if request.invitor_uin.is_some() {
+            "is_invite,"
+        } else {
+            ""
+        },
+        if request.suspicious {
+            "suspicious,"
+        } else {
+            ""
+        }
+    );
+
+    pbbot::GroupRequestEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "request".to_string(),
+        request_type: "group".to_string(),
+        sub_type,
+        group_id: request.group_code,
+        user_id: request.req_uin,
+        comment: request.message,
+        flag,
+        extra: Default::default(),
+    }
+}
+
+pub async fn to_proto_friend_request(
+    _: &Arc<Bot>,
+    event: FriendRequestEvent,
+) -> pbbot::FriendRequestEvent {
+    let client = event.client;
+    let request = event.request;
+    let flag = format!("{}:{}", request.req_uin, request.msg_seq);
+
+    pbbot::FriendRequestEvent {
+        time: chrono::Utc::now().timestamp(),
+        self_id: client.uin().await,
+        post_type: "request".to_string(),
+        request_type: "friend".to_string(),
+        user_id: request.req_uin,
+        comment: request.message,
+        flag,
         extra: Default::default(),
     }
 }
