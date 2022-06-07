@@ -271,7 +271,7 @@ pub async fn to_proto_group_ban(_: &Arc<Bot>, event: GroupMuteEvent) -> pbbot::G
         group_id: mute.group_code,
         operator_id: mute.operator_uin,
         user_id: mute.target_uin,
-        duration: mute.time as i64,
+        duration: mute.duration.as_secs() as i64,
         extra: Default::default(),
     }
 }
