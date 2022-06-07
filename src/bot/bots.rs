@@ -34,7 +34,9 @@ pub async fn on_login(
             .await
             .expect("failed to load plugins"),
     ));
-    BOTS.insert(uin, bot.clone());
+    if let Some(old) = BOTS.insert(uin, bot.clone()) {
+        old.stop();
+    }
     bot.start_plugins();
     bot.start_handle_event(event_receiver);
     tokio::spawn(async move {
