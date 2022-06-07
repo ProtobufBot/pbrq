@@ -60,12 +60,18 @@ pub fn append_text(chain: &mut MessageChain, mut data: HashMap<String, String>) 
 }
 
 pub fn append_at(chain: &mut MessageChain, mut data: HashMap<String, String>) {
-    chain.push(elem::At::new(
-        data.remove("qq")
-            .unwrap_or_default()
-            .parse()
-            .unwrap_or_default(),
-    ))
+    let target = data
+        .remove("qq")
+        .unwrap_or_default()
+        .parse()
+        .unwrap_or_default();
+    let mut display = format!("@{}", target);
+    if let Some(d) = data.remove("display") {
+        if !d.is_empty() {
+            display = d;
+        }
+    }
+    chain.push(elem::At { target, display })
 }
 
 pub fn append_face(chain: &mut MessageChain, mut data: HashMap<String, String>) {
