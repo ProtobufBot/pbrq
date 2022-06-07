@@ -1,34 +1,29 @@
 # pbbot-rq
-基于Rust的QQ协议接口运行程序
 
-## 报错问题解决
+基于 [ricq](https://github.com/lz1998/ricq) 的机器人框架，使用 websocket + protobuf 通信
 
-### [1]error[E0554]Cancel changes
+## 编译
+
+环境要求：使用 [rustup](https://rustup.rs/) 安装的 Rust 环境。
+
+如果速度较慢可以使用 [rsproxy](https://rsproxy.cn/)。
+
+```bash
+ # 更新rust工具链到最新
+rustup update
+
+# 拉取最新代码
+git pull
+
+# 更新依赖
+cargo update
+
+# 清理之前的产物
+cargo clean
+
+# 编译
+cargo +nightly build --release
+
+# 运行
+./target/release/main
 ```
-error[E0554]: `#![feature]` may not be used on the stable release channel
- --> C:\Users\Dongeast\.cargo\git\checkouts\rs-qq-f947ea2807e050e7\e7c6131\rq-engine\src\lib.rs:1:1
-  |
-1 | #![feature(type_alias_impl_trait)]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-   Compiling hyper-tls v0.5.0
-   Compiling axum v0.4.8
-   Compiling reqwest v0.11.10
-For more information about this error, try `rustc --explain E0554`.
-error: could not compile `rq-engine` due to previous error
-warning: build failed, waiting for other jobs to finish...
-error: build failed
-```
-![error: build failed](https://user-images.githubusercontent.com/66114014/164759104-4eb9e7b4-8e9e-4a29-bdac-ca2a14bbd5bb.png)
-
-### [1]解决方法
-执行命令：`rustup override set nightly`后再运行build命令编译！
-
-## 接口的访问方法
-### 使用PostMan等工具进行访问测试
-- 第一步：打开我们的PostMan工具，如果我们想要访问我们已经运行的`pbbot-rq`程序的接口，我们需要在Headers中添加一条配置，设置`Content-type`为`application/json;charset=UTF-8`访问设置如下：
-![Header](https://user-images.githubusercontent.com/66114014/164883178-607b4285-2aac-435b-a6ef-67b12600660a.png)
-- 第二步：在Body中填写我们的参数列表，选择访问方式为POST/GET
-![设置参数列表和访问方式](https://user-images.githubusercontent.com/66114014/164883513-bbe07c62-a54b-423e-81c9-ba776b2e377b.png)
-### 接口的参数和访问方式
-
