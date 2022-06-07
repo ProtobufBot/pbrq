@@ -35,6 +35,6 @@ pub async fn http_get(uri: &str) -> RCResult<Vec<u8>> {
 pub async fn read_binary_file(path: &str) -> RCResult<Vec<u8>> {
     let mut f = tokio::fs::File::open(path).await.map_err(RCError::IO)?;
     let mut b = Vec::new();
-    f.read_buf(&mut b).await.map_err(RCError::IO)?;
+    f.read_to_end(&mut b).await.map_err(RCError::IO)?;
     Ok(b)
 }
