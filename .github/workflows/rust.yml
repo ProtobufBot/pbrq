@@ -1,0 +1,77 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release-win:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - target: i686-pc-windows-msvc
+            name: pbbot-rq-win-i686.exe
+          - target: x86_64-pc-windows-msvc
+            name: pbbot-rq-win-x86_64.exe
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: rust-toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          target: ${{ matrix.target }}
+      - name: cargo-build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: upload-release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.target }}/release/pbbot-rq.exe
+          asset_name: ${{ matrix.name }}
+          tag: ${{ github.ref }}
+
+  release-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: i686-unknown-linux-musl
+            name: pbbot-rq-linux-i686
+          - target: x86_64-unknown-linux-musl
+            name: pbbot-rq-linux-x86_64
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: multilib
+        if: ${{ matrix.target == 'i686-unknown-linux-gnu' }}
+        run: sudo apt-get install -y gcc-multilib
+      - name: rust-toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          target: ${{ matrix.target }}
+      - name: cargo-build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: upload-release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.target }}/release/pbbot-rq
+          asset_name: ${{ matrix.name }}
+          tag: ${{ github.ref }}
