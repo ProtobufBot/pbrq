@@ -143,6 +143,22 @@ impl PluginConnection {
             frame_type: match event {
                 Data::PrivateMessageEvent(_) => pbbot::frame::FrameType::TPrivateMessageEvent,
                 Data::GroupMessageEvent(_) => pbbot::frame::FrameType::TGroupMessageEvent,
+                Data::GroupUploadNoticeEvent(_) => pbbot::frame::FrameType::TGroupUploadNoticeEvent,
+                Data::GroupAdminNoticeEvent(_) => pbbot::frame::FrameType::TGroupAdminNoticeEvent,
+                Data::GroupDecreaseNoticeEvent(_) => {
+                    pbbot::frame::FrameType::TGroupDecreaseNoticeEvent
+                }
+                Data::GroupIncreaseNoticeEvent(_) => {
+                    pbbot::frame::FrameType::TGroupIncreaseNoticeEvent
+                }
+                Data::GroupBanNoticeEvent(_) => pbbot::frame::FrameType::TGroupBanNoticeEvent,
+                Data::FriendAddNoticeEvent(_) => pbbot::frame::FrameType::TFriendAddNoticeEvent,
+                Data::GroupRecallNoticeEvent(_) => pbbot::frame::FrameType::TGroupRecallNoticeEvent,
+                Data::FriendRecallNoticeEvent(_) => {
+                    pbbot::frame::FrameType::TFriendRecallNoticeEvent
+                }
+                Data::FriendRequestEvent(_) => pbbot::frame::FrameType::TFriendRequestEvent,
+                Data::GroupRequestEvent(_) => pbbot::frame::FrameType::TGroupRequestEvent,
                 _ => pbbot::frame::FrameType::Tunknown,
             } as i32,
             echo: self.event_seq.fetch_add(1, Ordering::Relaxed).to_string(),
