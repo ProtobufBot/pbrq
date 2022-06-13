@@ -14,7 +14,7 @@ message PrivateMessageEvent{
     string raw_message = 9;
     int32 font = 10;
     Sender sender = 11;
-    bytes message_id = 12;
+    MessageReceipt message_id = 12;
     message Sender{
         int64 user_id = 1;
         string nickname = 2;
@@ -38,7 +38,7 @@ message GroupMessageEvent{
     string raw_message = 11;
     int32 font = 12;
     Sender sender = 13;
-    bytes message_id = 14;
+    MessageReceipt message_id = 14;
     message Anonymous{
         int64 id = 1;
         string name = 2;
@@ -141,7 +141,8 @@ message GroupRecallNoticeEvent{
     int64 group_id = 5;
     int64 user_id = 6;
     int64 operator_id = 7;
-    int32 message_id = 8;
+//    int32 message_id = 8; // 废弃
+    MessageReceipt message_id = 9;
     map<string, string> extra = 255;
 }
 
@@ -151,7 +152,8 @@ message FriendRecallNoticeEvent{
     string post_type = 3;
     string notice_type = 4;
     int64 user_id = 5;
-    int32 message_id = 6;
+//    int32 message_id = 6; // 废弃
+    MessageReceipt message_id = 7;
     map<string, string> extra = 255;
 }
 

@@ -14,7 +14,6 @@ use crate::idl::pbbot;
 use crate::idl::pbbot::MessageReceipt;
 use crate::msg::to_proto_chain;
 use crate::msg::to_xml::proto_to_xml;
-use crate::plugin::pb_to_bytes::PbToBytes;
 
 pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::frame::Data> {
     match event {
@@ -155,8 +154,7 @@ pub async fn to_proto_group_message(
         seqs: message.seqs,
         rands: message.rands,
         group_id: message.group_code,
-    }
-    .to_bytes();
+    };
     let proto_message = to_proto_chain(&client, message.elements);
     let raw_message = proto_to_xml(proto_message.clone());
     pbbot::GroupMessageEvent {
@@ -165,7 +163,7 @@ pub async fn to_proto_group_message(
         post_type: "message".to_string(),
         message_type: "group".to_string(),
         sub_type: "normal".to_string(),
-        message_id,
+        message_id: Some(message_id),
         group_id: message.group_code,
         user_id: message.from_uin,
         anonymous: None, // TODO
@@ -193,8 +191,7 @@ pub async fn to_proto_private_message(
         seqs: message.seqs,
         rands: message.rands,
         group_id: 0,
-    }
-    .to_bytes();
+    };
     let proto_message = to_proto_chain(&client, message.elements);
     let raw_message = proto_to_xml(proto_message.clone());
     pbbot::PrivateMessageEvent {
@@ -203,7 +200,7 @@ pub async fn to_proto_private_message(
         post_type: "message".to_string(),
         message_type: "private".to_string(),
         sub_type: "normal".to_string(),
-        message_id,
+        message_id: Some(message_id),
         user_id: message.from_uin,
         raw_message,
         message: proto_message,
@@ -281,13 +278,21 @@ pub async fn to_proto_friend_recall(
     event: FriendMessageRecallEvent,
 ) -> pbbot::FriendRecallNoticeEvent {
     let client = event.client;
+    let recall = event.recall;
+    let message_id = MessageReceipt {
+        sender_id: recall.friend_uin,
+        time: recall.time as i64,
+        seqs: vec![recall.msg_seq],
+        rands: vec![],
+        group_id: 0,
+    };
     pbbot::FriendRecallNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
         post_type: "notice".to_string(),
         notice_type: "friend_recall".to_string(),
-        user_id: event.recall.friend_uin,
-        message_id: event.recall.msg_seq,
+        user_id: recall.friend_uin,
+        message_id: Some(message_id),
         extra: Default::default(),
     }
 }
@@ -297,15 +302,23 @@ pub async fn to_proto_group_recall(
     event: GroupMessageRecallEvent,
 ) -> pbbot::GroupRecallNoticeEvent {
     let client = event.client;
+    let recall = event.recall;
+    let message_id = MessageReceipt {
+        sender_id: recall.author_uin,
+        time: recall.time as i64,
+        seqs: vec![recall.msg_seq],
+        rands: vec![],
+        group_id: recall.group_code,
+    };
     pbbot::GroupRecallNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
         post_type: "notice".to_string(),
         notice_type: "group_recall".to_string(),
-        group_id: event.recall.group_code,
-        user_id: event.recall.author_uin,
-        operator_id: event.recall.operator_uin,
-        message_id: event.recall.msg_seq,
+        group_id: recall.group_code,
+        user_id: recall.author_uin,
+        operator_id: recall.operator_uin,
+        message_id: Some(message_id),
         extra: Default::default(),
     }
 }

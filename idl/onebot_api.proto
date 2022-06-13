@@ -10,7 +10,7 @@ message SendPrivateMsgReq{
 }
 message SendPrivateMsgResp{
 //    int32 message_id = 1; // 废弃
-    bytes message_id = 2;
+    MessageReceipt message_id = 2;
 }
 
 message SendGroupMsgReq{
@@ -20,7 +20,7 @@ message SendGroupMsgReq{
 }
 message SendGroupMsgResp{
 //    int32 message_id = 1; // 废弃
-    bytes message_id = 2;
+    MessageReceipt message_id = 2;
 }
 
 message SendMsgReq{
@@ -32,12 +32,12 @@ message SendMsgReq{
 }
 message SendMsgResp{
 //    int32 message_id = 1; // 废弃
-    bytes message_id = 2;
+    MessageReceipt message_id = 2;
 }
 
 message DeleteMsgReq{
 //    int32 message_id = 1;
-    bytes message_id = 2;
+    MessageReceipt message_id = 2;
 }
 message DeleteMsgResp{
 }

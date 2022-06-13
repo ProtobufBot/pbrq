@@ -8,7 +8,6 @@ use crate::error::{RCError, RCResult};
 use crate::idl::pbbot::frame::Data;
 use crate::idl::pbbot::*;
 use crate::msg::{to_rq_chain, Contact};
-use crate::plugin::pb_to_bytes::PbToBytes;
 
 pub async fn handle_api_frame(bot: &Arc<Bot>, req_frame: Frame) -> Frame {
     let bot_id = req_frame.bot_id;
@@ -132,9 +131,10 @@ pub async fn handle_send_private_msg(
         seqs: receipt.seqs,
         rands: receipt.rands,
         group_id: 0,
-    }
-    .to_bytes();
-    Ok(SendPrivateMsgResp { message_id })
+    };
+    Ok(SendPrivateMsgResp {
+        message_id: Some(message_id),
+    })
 }
 
 pub async fn handle_send_group_msg(
@@ -158,13 +158,14 @@ pub async fn handle_send_group_msg(
         seqs: receipt.seqs,
         rands: receipt.rands,
         group_id: req.group_id,
-    }
-    .to_bytes();
-    Ok(SendGroupMsgResp { message_id })
+    };
+    Ok(SendGroupMsgResp {
+        message_id: Some(message_id),
+    })
 }
 
 pub async fn handle_delete_msg(bot: &Arc<Bot>, req: DeleteMsgReq) -> RCResult<DeleteMsgResp> {
-    let receipt = MessageReceipt::from_bytes(&req.message_id)?;
+    let receipt = req.message_id.ok_or(RCError::None("message_id"))?;
     if receipt.group_id != 0 {
         bot.client
             .recall_group_message(receipt.group_id, receipt.seqs, receipt.rands)
