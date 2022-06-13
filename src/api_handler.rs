@@ -187,8 +187,10 @@ pub async fn handle_send_like(bot: &Arc<Bot>, req: SendLikeReq) -> RCResult<Send
 }
 
 pub async fn handle_group_kick(bot: &Arc<Bot>, req: SetGroupKickReq) -> RCResult<SetGroupKickResp> {
+    let mut user_ids = req.user_ids;
+    user_ids.push(req.user_id); // 兼容旧版
     bot.client
-        .group_kick(req.group_id, vec![req.user_id], "", req.reject_add_request)
+        .group_kick(req.group_id, user_ids, "", req.reject_add_request)
         .await?;
     Ok(SetGroupKickResp {})
 }
