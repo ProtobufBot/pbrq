@@ -396,3 +396,9 @@ message CleanCacheReq{
 }
 message CleanCacheResp{
 }
+
+message SetGroupSignInReq{
+    int64 group_id = 1;
+}
+message SetGroupSignInResp{
+}

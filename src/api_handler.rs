@@ -105,6 +105,9 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         // Data::GetVersionInfoReq(_) => {}
         // Data::SetRestartReq(_) => {}
         // Data::CleanCacheReq(_) => {}
+        Data::SetGroupSignInReq(req) => handle_set_group_sign_in(bot, req)
+            .await
+            .map(Data::SetGroupSignInResp),
         _ => Err(RCError::None("api_req not supported")),
     }
     .ok()
@@ -470,4 +473,12 @@ pub async fn handle_set_friend_add_request(
         .solve_friend_system_message(msg_seq, req_uin, req.approve)
         .await?;
     Ok(SetFriendAddRequestResp {})
+}
+
+pub async fn handle_set_group_sign_in(
+    bot: &Arc<Bot>,
+    req: SetGroupSignInReq,
+) -> RCResult<SetGroupSignInResp> {
+    bot.client.group_sign_in(req.group_id).await?;
+    Ok(SetGroupSignInResp {})
 }
