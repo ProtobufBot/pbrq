@@ -65,10 +65,10 @@ pub fn append_at(chain: &mut MessageChain, mut data: HashMap<String, String>) {
         .unwrap_or_default()
         .parse()
         .unwrap_or_default();
-    let mut display = format!("@{}", target);
+    let mut display = format!("{}", target);
     if let Some(d) = data.remove("display") {
         if !d.is_empty() {
-            display = d;
+            display = format!("@{}", d);
         }
     }
     chain.push(elem::At { target, display })
