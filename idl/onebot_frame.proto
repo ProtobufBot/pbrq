@@ -62,6 +62,7 @@ message Frame{
         GetVersionInfoReq get_version_info_req = 236;
         SetRestartReq set_restart_req = 237;
         CleanCacheReq clean_cache_req = 238;
+        SetGroupSignInReq set_group_sign_in_req = 239;
 
         SendPrivateMsgResp send_private_msg_resp = 301;
         SendGroupMsgResp send_group_msg_resp = 302;
@@ -101,6 +102,7 @@ message Frame{
         GetVersionInfoResp get_version_info_resp = 336;
         SetRestartResp set_restart_resp = 337;
         CleanCacheResp clean_cache_resp = 338;
+        SetGroupSignInResp set_group_sign_in_resp = 339;
     }
 
     enum FrameType{
@@ -157,6 +159,7 @@ message Frame{
         TGetVersionInfoReq = 236;
         TSetRestartReq = 237;
         TCleanCacheReq = 238;
+        TSetGroupSignInReq = 239;
 
 
         TSendPrivateMsgResp = 301;
@@ -197,5 +200,6 @@ message Frame{
         TGetVersionInfoResp = 336;
         TSetRestartResp = 337;
         TCleanCacheResp = 338;
+        TSetGroupSignInResp = 339;
     }
 }

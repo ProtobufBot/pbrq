@@ -11,9 +11,9 @@ jobs:
       matrix:
         include:
           - target: i686-pc-windows-msvc
-            name: pbbot-rq-win-i686.exe
+            name: pbbot-rq-${{ github.ref_name }}-win-i686.exe
           - target: x86_64-pc-windows-msvc
-            name: pbbot-rq-win-x86_64.exe
+            name: pbbot-rq-${{ github.ref_name }}-win-x86_64.exe
 
     steps:
       - name: checkout
@@ -45,9 +45,9 @@ jobs:
       matrix:
         include:
 #          - target: i686-unknown-linux-musl
-#            name: pbbot-rq-linux-i686
+#            name: pbbot-rq-${{ github.ref_name }}-linux-i686
           - target: x86_64-unknown-linux-musl
-            name: pbbot-rq-linux-x86_64
+            name: pbbot-rq-${{ github.ref_name }}-linux-x86_64
 
     steps:
       - name: checkout
@@ -81,9 +81,9 @@ jobs:
       matrix:
         include:
           - target: x86_64-apple-darwin
-            name: pbbot-rq-darwin-x86_64
+            name: pbbot-rq-${{ github.ref_name }}-darwin-x86_64
           - target: aarch64-apple-darwin
-            name: pbbot-rq-darwin-aarch64
+            name: pbbot-rq-${{ github.ref_name }}-darwin-aarch64
 
     steps:
       - name: checkout
