@@ -140,7 +140,7 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
         tracing::info!("login success: {}", req.uin);
         on_login(cli, receiver, credential, network_join_handle).await;
     } else {
-        CLIENTS.insert(
+        if let Some(old) = CLIENTS.insert(
             req.uin,
             PasswordClient {
                 client: cli,
@@ -149,7 +149,9 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
                 network_join_handle,
                 credential,
             },
-        );
+        ) {
+            old.client.stop(NetworkStatus::Stop);
+        }
     }
     Ok(Json(PasswordLoginResp::from(resp)))
 }
