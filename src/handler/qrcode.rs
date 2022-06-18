@@ -24,6 +24,7 @@ use crate::handler::ConvertU8;
 pub struct QRCodeClient {
     pub sig: Vec<u8>,
     pub image: Vec<u8>,
+    pub state: QRCodeState,
     pub client: Arc<Client>,
     pub event_receiver: tokio::sync::broadcast::Receiver<QEvent>,
     pub network_join_handle: JoinHandle<()>,
@@ -88,6 +89,7 @@ pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateCli
             QRCodeClient {
                 sig: image_fetch.sig.to_vec(),
                 image: image_fetch.image_data.to_vec(),
+                state: QRCodeState::ImageFetch(image_fetch.clone()),
                 client: cli,
                 event_receiver: receiver,
                 network_join_handle,
@@ -123,7 +125,17 @@ pub async fn query(Json(req): Json<QueryQRCodeReq>) -> RCResult<Json<QueryQRCode
         .query_qrcode_result(&sig)
         .await
         .map_err(RCError::RQ)?;
-    if let QRCodeState::Confirmed(ref confirmed) = resp {
+    let state = match resp {
+        QRCodeState::ImageFetch(_) => "image_fetch",
+        QRCodeState::WaitingForScan => "waiting_for_scan",
+        QRCodeState::WaitingForConfirm => "waiting_for_confirm",
+        QRCodeState::Timeout => "timeout",
+        QRCodeState::Confirmed(_) => "confirmed",
+        QRCodeState::Canceled => "canceled",
+    }
+    .to_string();
+    CLIENTS.get_mut(&sig).ok_or(RCError::ClientNotFound)?.state = resp.clone();
+    if let QRCodeState::Confirmed(confirmed) = resp {
         let (_, cli) = CLIENTS.remove(&sig).unwrap();
         let mut resp = cli
             .client
@@ -151,17 +163,7 @@ pub async fn query(Json(req): Json<QueryQRCodeReq>) -> RCResult<Json<QueryQRCode
             .await;
         }
     }
-    Ok(Json(QueryQRCodeResp {
-        state: match resp {
-            QRCodeState::ImageFetch(_) => "image_fetch",
-            QRCodeState::WaitingForScan => "waiting_for_scan",
-            QRCodeState::WaitingForConfirm => "waiting_for_confirm",
-            QRCodeState::Timeout => "timeout",
-            QRCodeState::Confirmed(_) => "confirmed",
-            QRCodeState::Canceled => "canceled",
-        }
-        .into(),
-    }))
+    Ok(Json(QueryQRCodeResp { state }))
 }
 
 #[derive(Default, Serialize)]
@@ -176,6 +178,7 @@ pub struct ListClientRespClient {
     #[serde(with = "base64")]
     pub image: Vec<u8>,
     pub protocol: u8,
+    pub state: String,
 }
 
 pub async fn list() -> RCResult<Json<ListClientResp>> {
@@ -185,6 +188,15 @@ pub async fn list() -> RCResult<Json<ListClientResp>> {
             sig: c.sig.to_vec(),
             image: c.image.clone(),
             protocol: c.client.version().await.protocol.to_u8(),
+            state: match c.state {
+                QRCodeState::ImageFetch(_) => "image_fetch",
+                QRCodeState::WaitingForScan => "waiting_for_scan",
+                QRCodeState::WaitingForConfirm => "waiting_for_confirm",
+                QRCodeState::Timeout => "timeout",
+                QRCodeState::Confirmed(_) => "confirmed",
+                QRCodeState::Canceled => "canceled",
+            }
+            .into(),
         })
     }
     Ok(Json(ListClientResp { clients }))
