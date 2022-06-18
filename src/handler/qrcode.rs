@@ -19,6 +19,7 @@ use tokio::task::JoinHandle;
 
 use crate::bot::bots::on_login;
 use crate::error::{RCError, RCResult};
+use crate::handler::ConvertU8;
 
 pub struct QRCodeClient {
     pub sig: Vec<u8>,
@@ -56,7 +57,7 @@ mod base64 {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CreateClientReq {
     pub device_seed: Option<u64>,
-    pub client_protocol: Option<i32>,
+    pub protocol: u8,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -70,14 +71,7 @@ pub struct CreateClientResp {
 pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateClientResp>> {
     let rand_seed = req.device_seed.unwrap_or_else(rand::random);
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
-    let protocol = match req.client_protocol.unwrap_or(5) {
-        0 => Protocol::IPad,
-        1 => Protocol::AndroidPhone,
-        2 => Protocol::AndroidWatch,
-        3 => Protocol::MacOS,
-        4 => Protocol::QiDian,
-        _ => Protocol::IPad,
-    };
+    let protocol = Protocol::from_u8(req.protocol);
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
     let cli = Arc::new(Client::new(device, get_version(protocol), sender));
     let stream = tokio::net::TcpStream::connect(cli.get_address())
@@ -181,18 +175,19 @@ pub struct ListClientRespClient {
     pub sig: Vec<u8>,
     #[serde(with = "base64")]
     pub image: Vec<u8>,
+    pub protocol: u8,
 }
 
 pub async fn list() -> RCResult<Json<ListClientResp>> {
-    Ok(Json(ListClientResp {
-        clients: CLIENTS
-            .iter()
-            .map(|c| ListClientRespClient {
-                sig: c.sig.to_vec(),
-                image: c.image.clone(),
-            })
-            .collect(),
-    }))
+    let mut clients = Vec::new();
+    for c in CLIENTS.iter() {
+        clients.push(ListClientRespClient {
+            sig: c.sig.to_vec(),
+            image: c.image.clone(),
+            protocol: c.client.version().await.protocol.to_u8(),
+        })
+    }
+    Ok(Json(ListClientResp { clients }))
 }
 
 #[derive(Default, Serialize, Deserialize)]

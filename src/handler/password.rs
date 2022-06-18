@@ -17,6 +17,7 @@ use tokio::task::JoinHandle;
 
 use crate::bot::bots::on_login;
 use crate::error::{RCError, RCResult};
+use crate::handler::ConvertU8;
 
 pub struct PasswordClient {
     pub client: Arc<Client>,
@@ -29,25 +30,28 @@ pub struct PasswordClient {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CreateClientReq {
     pub uin: i64,
+    pub protocol: u8,
     pub password: String,
     pub device_seed: Option<u64>,
-    pub client_protocol: Option<i32>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SubmitTicketReq {
     pub uin: i64,
+    pub protocol: u8,
     pub ticket: String,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RequestSmsReq {
     pub uin: i64,
+    pub protocol: u8,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SubmitSmsReq {
     pub uin: i64,
+    pub protocol: u8,
     pub sms: String,
 }
 
@@ -104,7 +108,7 @@ impl From<LoginResponse> for PasswordLoginResp {
 }
 
 lazy_static! {
-    static ref CLIENTS: DashMap<i64, PasswordClient> = Default::default();
+    static ref CLIENTS: DashMap<(i64, u8), PasswordClient> = Default::default();
 }
 
 pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLoginResp>> {
@@ -113,16 +117,9 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
         rand_seed = req.uin as u64;
     }
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
-    let protocol = match req.client_protocol.unwrap_or(5) {
-        0 => Protocol::IPad,
-        1 => Protocol::AndroidPhone,
-        2 => Protocol::AndroidWatch,
-        3 => Protocol::MacOS,
-        4 => Protocol::QiDian,
-        _ => Protocol::IPad,
-    };
+    let protocol = Protocol::from_u8(req.protocol);
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
-    let cli = Arc::new(Client::new(device, get_version(protocol), sender));
+    let cli = Arc::new(Client::new(device, get_version(protocol.clone()), sender));
     let connector = DefaultConnector;
     let stream = connector.connect(&cli).await.map_err(RCError::IO)?;
     let c = cli.clone();
@@ -137,11 +134,11 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
         password: req.password,
     });
     if let LoginResponse::Success(_) = resp {
-        tracing::info!("login success: {}", req.uin);
+        tracing::info!("login success: {} {:?}", req.uin, req.protocol);
         on_login(cli, receiver, credential, network_join_handle).await;
     } else {
         if let Some(old) = CLIENTS.insert(
-            req.uin,
+            (req.uin, protocol.to_u8()),
             PasswordClient {
                 client: cli,
                 login_response: resp.clone(),
@@ -158,7 +155,7 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
 
 pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<PasswordLoginResp>> {
     let mut resp = CLIENTS
-        .get(&req.uin)
+        .get(&(req.uin, req.protocol))
         .ok_or(RCError::ClientNotFound)?
         .client
         .submit_ticket(&req.ticket)
@@ -166,7 +163,7 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
         .map_err(RCError::RQ)?;
     if let LoginResponse::DeviceLockLogin(_) = resp {
         resp = CLIENTS
-            .get(&req.uin)
+            .get(&(req.uin, req.protocol))
             .ok_or(RCError::ClientNotFound)?
             .client
             .device_lock_login()
@@ -174,8 +171,8 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
             .map_err(RCError::RQ)?;
     }
     if let LoginResponse::Success(_) = resp {
-        if let Some((uin, client)) = CLIENTS.remove(&req.uin) {
-            tracing::info!("login success: {}", uin);
+        if let Some(((uin, protocol), client)) = CLIENTS.remove(&(req.uin, req.protocol)) {
+            tracing::info!("login success: {} {:?}", uin, Protocol::from_u8(protocol));
             on_login(
                 client.client,
                 client.event_receiver,
@@ -188,7 +185,7 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
         }
     } else {
         CLIENTS
-            .get_mut(&req.uin)
+            .get_mut(&(req.uin, req.protocol))
             .ok_or(RCError::ClientNotFound)?
             .login_response = resp.clone();
     }
@@ -197,14 +194,14 @@ pub async fn submit_ticket(Json(req): Json<SubmitTicketReq>) -> RCResult<Json<Pa
 
 pub async fn request_sms(Json(req): Json<RequestSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
     let resp = CLIENTS
-        .get(&req.uin)
+        .get(&(req.uin, req.protocol))
         .ok_or(RCError::ClientNotFound)?
         .client
         .request_sms()
         .await
         .map_err(RCError::RQ)?;
     CLIENTS
-        .get_mut(&req.uin)
+        .get_mut(&(req.uin, req.protocol))
         .ok_or(RCError::ClientNotFound)?
         .login_response = resp.clone();
     Ok(Json(PasswordLoginResp::from(resp)))
@@ -212,7 +209,7 @@ pub async fn request_sms(Json(req): Json<RequestSmsReq>) -> RCResult<Json<Passwo
 
 pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<PasswordLoginResp>> {
     let mut resp = CLIENTS
-        .get(&req.uin)
+        .get(&(req.uin, req.protocol))
         .ok_or(RCError::ClientNotFound)?
         .client
         .submit_sms_code(&req.sms)
@@ -220,7 +217,7 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
         .map_err(RCError::RQ)?;
     if let LoginResponse::DeviceLockLogin(_) = resp {
         resp = CLIENTS
-            .get(&req.uin)
+            .get(&(req.uin, req.protocol))
             .ok_or(RCError::ClientNotFound)?
             .client
             .device_lock_login()
@@ -228,9 +225,9 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
             .map_err(RCError::RQ)?;
     }
     if let LoginResponse::Success(_) = resp {
-        let cli = CLIENTS.remove(&req.uin);
-        if let Some((uin, client)) = cli {
-            tracing::info!("login success: {}", uin);
+        let cli = CLIENTS.remove(&(req.uin, req.protocol));
+        if let Some(((uin, protocol), client)) = cli {
+            tracing::info!("login success: {} {:?}", uin, Protocol::from_u8(protocol));
             on_login(
                 client.client,
                 client.event_receiver,
@@ -243,7 +240,7 @@ pub async fn submit_sms(Json(req): Json<SubmitSmsReq>) -> RCResult<Json<Password
         }
     } else {
         CLIENTS
-            .get_mut(&req.uin)
+            .get_mut(&(req.uin, req.protocol))
             .ok_or(RCError::ClientNotFound)?
             .login_response = resp.clone();
     }
@@ -258,31 +255,33 @@ pub struct ListClientResp {
 #[derive(Default, Serialize)]
 pub struct ListClientRespClient {
     pub uin: i64,
+    pub protocol: u8,
     pub resp: PasswordLoginResp,
 }
 
 pub async fn list() -> RCResult<Json<ListClientResp>> {
-    Ok(Json(ListClientResp {
-        clients: CLIENTS
-            .iter()
-            .map(|c| ListClientRespClient {
-                uin: *c.key(),
-                resp: PasswordLoginResp::from(c.login_response.clone()),
-            })
-            .collect(),
-    }))
+    let mut clients = Vec::new();
+    for c in CLIENTS.iter() {
+        clients.push(ListClientRespClient {
+            uin: c.key().0,
+            protocol: c.client.version().await.protocol.to_u8(),
+            resp: PasswordLoginResp::from(c.login_response.clone()),
+        })
+    }
+    Ok(Json(ListClientResp { clients }))
 }
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct DeleteClientReq {
     pub uin: i64,
+    pub protocol: u8,
 }
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct DeleteClientResp {}
 
 pub async fn delete(Json(req): Json<DeleteClientReq>) -> RCResult<Json<DeleteClientResp>> {
-    if let Some((_, cli)) = CLIENTS.remove(&req.uin) {
+    if let Some((_, cli)) = CLIENTS.remove(&(req.uin, req.protocol)) {
         cli.client.stop(NetworkStatus::Stop);
     }
     Ok(Json(DeleteClientResp {}))
