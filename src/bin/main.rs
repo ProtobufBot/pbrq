@@ -20,7 +20,7 @@ use pbbot_rq::handler::{bot, password, plugins, qrcode};
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Bind addr
-    #[clap(long, value_parser, default_value = "0.0.0.0:3000")]
+    #[clap(long, value_parser, default_value = "0.0.0.0:9000")]
     bind_addr: String,
 
     /// Location of static dir
