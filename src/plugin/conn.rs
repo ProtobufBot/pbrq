@@ -105,6 +105,12 @@ impl PluginConnection {
                             Message::Binary(m) => {
                                 let b=bot.clone();
                                 let conn=self.clone();
+                                let start=std::time::Instant::now();
+                                let r:u32=rand::random();
+                                let uin=b.client.uin().await;
+                                if uin==2490390725{
+                                    tracing::info!("handle_api {} start",r)
+                                }
                                 let _: JoinHandle<Result<(),RCError>> =tokio::spawn(async move {
                                     let req = pbbot::Frame::from_bytes(&m).map_err(RCError::PB)?;
                                     // TODO check api permission
@@ -112,7 +118,9 @@ impl PluginConnection {
                                     conn.send_msg(Message::Binary(resp.to_bytes()));
                                     Ok(())
                                 });
-
+                                if uin==2490390725{
+                                    tracing::info!("handle_api {} end {:?}",r,start.elapsed())
+                                }
                             }
                             Message::Ping(m) => {
                                 self.send_msg(Message::Pong(m))
