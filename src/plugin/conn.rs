@@ -116,11 +116,12 @@ impl PluginConnection {
                                     // TODO check api permission
                                     let resp = handle_api_frame(&b,req).await;
                                     conn.send_msg(Message::Binary(resp.to_bytes()));
-                                    Ok(())
-                                });
-                                if uin==2490390725{
+                                                                    if uin==2490390725{
                                     tracing::info!("handle_api {} end {:?}",r,start.elapsed())
                                 }
+                                    Ok(())
+                                });
+
                             }
                             Message::Ping(m) => {
                                 self.send_msg(Message::Pong(m))
