@@ -18,12 +18,13 @@ pub async fn list() -> RCResult<Json<ListBotResp>> {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DeleteBotReq {
     uin: i64,
+    protocol: u8,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DeleteBotResp {}
 
 pub async fn delete(Json(req): Json<DeleteBotReq>) -> RCResult<Json<DeleteBotResp>> {
-    delete_bot(req.uin).await;
+    delete_bot(req.uin, req.protocol).await;
     Ok(Json(DeleteBotResp {}))
 }
