@@ -24,7 +24,7 @@ impl Default for Plugin {
         Self {
             name: "default".to_string(),
             disabled: false,
-            urls: vec!["http://localhost:8081/ws/rq/".into()],
+            urls: vec!["ws://localhost:8081/ws/rq/".into()],
         }
     }
 }
