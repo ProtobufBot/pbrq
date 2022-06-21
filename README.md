@@ -2,7 +2,39 @@
 
 基于 [ricq](https://github.com/lz1998/ricq) 的机器人框架，使用 websocket + protobuf 通信。
 
-建议直接下载 [Release](https://github.com/ProtobufBot/pbbot-rq/releases) 版本。
+
+## 使用方法
+
+1. 下载 [Release](https://github.com/ProtobufBot/pbbot-rq/releases) 版本。
+2. 下载 [PBRQ-UI-Release](https://github.com/ProtobufBot/pbrq-react-ui/releases)，并解压 static.zip。
+3. 如果是 Linux/MacOS 需要执行 `chmod +x pbbot-rq` 添加权限。
+4. 执行 `./pbbot-rq --help` 查看帮助。
+5. 执行 `./pbbot-rq --bind-dir 0.0.0.0:9000 --static-dir static` 启动程序，可以自己添加参数开启 跨域、HTTP-BASIC登录 等功能。
+6. 打开浏览器访问 `http://localhost:9000` 管理机器人。
+7. 首次运行后生成 `plugins` 文件夹，默认连接地址 `ws://localhost:8081/ws/rq/`，修改后重启生效。
+
+
+```text
+├── pbbot-rq.exe
+└── static
+    ├── asset-manifest.json
+    ├── favicon.ico
+    ├── index.html
+    ├── logo192.png
+    ├── logo512.png
+    ├── manifest.json
+    ├── robots.txt
+    └── static
+        ├── css
+        │   └── main.a14a9148.css
+        └── js
+            ├── 27.af432e68.chunk.js
+            ├── main.989aee2b.js
+            └── main.989aee2b.js.LICENSE.txt
+```
+
+
+
 
 ## API
 
