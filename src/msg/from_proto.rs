@@ -90,10 +90,23 @@ pub async fn append_image(
     contact: Contact,
 ) -> RCResult<()> {
     let url = data.remove("url").unwrap_or_default();
+    let uin = client.uin().await;
+    let start = std::time::Instant::now();
+    let r: u32 = rand::random();
+    if uin == 2490390725 {
+        tracing::info!("download_binary {} start", r)
+    }
     let data = get_binary(&url).await?;
+    tracing::info!("download_binary {} end {:?}", r, start.elapsed());
+    let start = std::time::Instant::now();
+    let r: u32 = rand::random();
+    if uin == 2490390725 {
+        tracing::info!("upload_image {} start", r)
+    }
     match contact {
         Contact::Group(code) => chain.push(client.upload_group_image(code, data).await?),
         Contact::Friend(uin) => chain.push(client.upload_friend_image(uin, data).await?),
     }
+    tracing::info!("upload_image {} end {:?}", r, start.elapsed());
     Ok(())
 }
