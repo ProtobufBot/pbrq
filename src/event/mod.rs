@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use ricq::client::event::{
-    FriendMessageEvent, FriendMessageRecallEvent, FriendRequestEvent, GroupLeaveEvent,
-    GroupMessageEvent, GroupMessageRecallEvent, GroupMuteEvent, GroupRequestEvent,
-    MemberPermissionChangeEvent, NewFriendEvent, NewMemberEvent, SelfInvitedEvent,
+    FriendMessageEvent, FriendMessageRecallEvent, GroupLeaveEvent, GroupMessageEvent,
+    GroupMessageRecallEvent, GroupMuteEvent, JoinGroupRequestEvent, MemberPermissionChangeEvent,
+    NewFriendEvent, NewFriendRequestEvent, NewMemberEvent, SelfInvitedEvent,
 };
 use ricq::handler::QEvent;
 use ricq::structs::GroupMemberPermission;
@@ -20,8 +20,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupMessage(e) => {
             tracing::info!(
                 "MESSAGE (GROUP={}): {}",
-                e.message.group_code,
-                e.message.elements
+                e.inner.group_code,
+                e.inner.elements
             );
             Some(pbbot::frame::Data::GroupMessageEvent(
                 to_proto_group_message(bot, e).await,
@@ -30,8 +30,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::FriendMessage(e) => {
             tracing::info!(
                 "MESSAGE (FRIEND={}): {}",
-                e.message.from_uin,
-                e.message.elements
+                e.inner.from_uin,
+                e.inner.elements
             );
             Some(pbbot::frame::Data::PrivateMessageEvent(
                 to_proto_private_message(bot, e).await,
@@ -41,8 +41,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupRequest(e) => {
             tracing::info!(
                 "GROUP_REQUEST (GROUP={}): {}",
-                e.request.group_code,
-                e.request.req_uin
+                e.inner.group_code,
+                e.inner.req_uin
             );
             Some(pbbot::frame::Data::GroupRequestEvent(
                 to_proto_group_request(bot, e).await,
@@ -51,18 +51,18 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::SelfInvited(e) => {
             tracing::info!(
                 "SELF_INVITED (GROUP={}): {}",
-                e.request.group_code,
-                e.request.invitor_uin
+                e.inner.group_code,
+                e.inner.invitor_uin
             );
             Some(pbbot::frame::Data::GroupRequestEvent(
                 to_proto_self_group_request(bot, e).await,
             ))
         }
-        QEvent::FriendRequest(e) => {
+        QEvent::NewFriendRequest(e) => {
             tracing::info!(
                 "FRIEND_REQUEST (UIN={}): {}",
-                e.request.req_uin,
-                e.request.message
+                e.inner.req_uin,
+                e.inner.message
             );
             Some(pbbot::frame::Data::FriendRequestEvent(
                 to_proto_friend_request(bot, e).await,
@@ -71,8 +71,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::NewMember(e) => {
             tracing::info!(
                 "NEW_MEMBER (GROUP={}): {}",
-                e.new_member.group_code,
-                e.new_member.member_uin
+                e.inner.group_code,
+                e.inner.member_uin
             );
             Some(pbbot::frame::Data::GroupIncreaseNoticeEvent(
                 to_proto_group_increase(bot, e).await,
@@ -81,8 +81,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupMute(e) => {
             tracing::info!(
                 "GROUP_MUTE (GROUP={}): {}",
-                e.group_mute.group_code,
-                e.group_mute.target_uin
+                e.inner.group_code,
+                e.inner.target_uin
             );
             Some(pbbot::frame::Data::GroupBanNoticeEvent(
                 to_proto_group_ban(bot, e).await,
@@ -91,8 +91,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::FriendMessageRecall(e) => {
             tracing::info!(
                 "FRIEND_RECALL (FRIEND={}): {}",
-                e.recall.friend_uin,
-                e.recall.msg_seq
+                e.inner.friend_uin,
+                e.inner.msg_seq
             );
             Some(pbbot::frame::Data::FriendRecallNoticeEvent(
                 to_proto_friend_recall(bot, e).await,
@@ -101,15 +101,15 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupMessageRecall(e) => {
             tracing::info!(
                 "GROUP_RECALL (GROUP={}): {}",
-                e.recall.group_code,
-                e.recall.msg_seq
+                e.inner.group_code,
+                e.inner.msg_seq
             );
             Some(pbbot::frame::Data::GroupRecallNoticeEvent(
                 to_proto_group_recall(bot, e).await,
             ))
         }
         QEvent::NewFriend(e) => {
-            tracing::info!("NEW_FRIEND (FRIEND={}): {}", e.friend.uin, e.friend.nick);
+            tracing::info!("NEW_FRIEND (FRIEND={}): {}", e.inner.uin, e.inner.nick);
             Some(pbbot::frame::Data::FriendAddNoticeEvent(
                 to_proto_friend_add(bot, e).await,
             ))
@@ -117,8 +117,8 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::GroupLeave(e) => {
             tracing::info!(
                 "GROUP_LEAVE (GROUP={}): {}",
-                e.leave.group_code,
-                e.leave.member_uin
+                e.inner.group_code,
+                e.inner.member_uin
             );
             Some(pbbot::frame::Data::GroupDecreaseNoticeEvent(
                 to_proto_group_decrease(bot, e).await,
@@ -130,9 +130,9 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
         QEvent::MemberPermissionChange(e) => {
             tracing::info!(
                 "PERMISSION_CHANGE (GROUP={}): {} {:?}",
-                e.change.group_code,
-                e.change.member_uin,
-                e.change.new_permission
+                e.inner.group_code,
+                e.inner.member_uin,
+                e.inner.new_permission
             );
             Some(pbbot::frame::Data::GroupAdminNoticeEvent(
                 to_proto_group_admin_notice(bot, e).await,
@@ -147,7 +147,7 @@ pub async fn to_proto_group_message(
     event: GroupMessageEvent,
 ) -> pbbot::GroupMessageEvent {
     let client = event.client;
-    let message = event.message;
+    let message = event.inner;
     let message_id = MessageReceipt {
         sender_id: message.from_uin,
         time: message.time as i64,
@@ -184,7 +184,7 @@ pub async fn to_proto_private_message(
     event: FriendMessageEvent,
 ) -> pbbot::PrivateMessageEvent {
     let client = event.client;
-    let message = event.message;
+    let message = event.inner;
     let message_id = MessageReceipt {
         sender_id: message.from_uin,
         time: message.time as i64,
@@ -219,7 +219,7 @@ pub async fn to_proto_group_decrease(
     event: GroupLeaveEvent,
 ) -> pbbot::GroupDecreaseNoticeEvent {
     let client = event.client;
-    let leave = event.leave;
+    let leave = event.inner;
     pbbot::GroupDecreaseNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
@@ -243,7 +243,7 @@ pub async fn to_proto_group_increase(
     event: NewMemberEvent,
 ) -> pbbot::GroupIncreaseNoticeEvent {
     let client = event.client;
-    let new_mem = event.new_member;
+    let new_mem = event.inner;
     pbbot::GroupIncreaseNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
@@ -258,7 +258,7 @@ pub async fn to_proto_group_increase(
 }
 pub async fn to_proto_group_ban(_: &Arc<Bot>, event: GroupMuteEvent) -> pbbot::GroupBanNoticeEvent {
     let client = event.client;
-    let mute = event.group_mute;
+    let mute = event.inner;
     pbbot::GroupBanNoticeEvent {
         time: chrono::Utc::now().timestamp(),
         self_id: client.uin().await,
@@ -278,7 +278,7 @@ pub async fn to_proto_friend_recall(
     event: FriendMessageRecallEvent,
 ) -> pbbot::FriendRecallNoticeEvent {
     let client = event.client;
-    let recall = event.recall;
+    let recall = event.inner;
     let message_id = MessageReceipt {
         sender_id: recall.friend_uin,
         time: recall.time as i64,
@@ -302,7 +302,7 @@ pub async fn to_proto_group_recall(
     event: GroupMessageRecallEvent,
 ) -> pbbot::GroupRecallNoticeEvent {
     let client = event.client;
-    let recall = event.recall;
+    let recall = event.inner;
     let message_id = MessageReceipt {
         sender_id: recall.author_uin,
         time: recall.time as i64,
@@ -333,17 +333,17 @@ pub async fn to_proto_friend_add(
         self_id: client.uin().await,
         post_type: "notice".to_string(),
         notice_type: "friend_add".to_string(),
-        user_id: event.friend.uin,
+        user_id: event.inner.uin,
         extra: Default::default(),
     }
 }
 
 pub async fn to_proto_group_request(
     _: &Arc<Bot>,
-    event: GroupRequestEvent,
+    event: JoinGroupRequestEvent,
 ) -> pbbot::GroupRequestEvent {
     let client = event.client;
-    let request = event.request;
+    let request = event.inner;
     let flag = format!(
         "{}:{}:{}",
         request.group_code, request.req_uin, request.msg_seq
@@ -381,7 +381,7 @@ pub async fn to_proto_self_group_request(
     event: SelfInvitedEvent,
 ) -> pbbot::GroupRequestEvent {
     let client = event.client;
-    let request = event.request;
+    let request = event.inner;
     let flag = format!(
         "{}:{}:{}",
         request.group_code,
@@ -405,10 +405,10 @@ pub async fn to_proto_self_group_request(
 
 pub async fn to_proto_friend_request(
     _: &Arc<Bot>,
-    event: FriendRequestEvent,
+    event: NewFriendRequestEvent,
 ) -> pbbot::FriendRequestEvent {
     let client = event.client;
-    let request = event.request;
+    let request = event.inner;
     let flag = format!("{}:{}", request.req_uin, request.msg_seq);
 
     pbbot::FriendRequestEvent {
@@ -428,7 +428,7 @@ pub async fn to_proto_group_admin_notice(
     event: MemberPermissionChangeEvent,
 ) -> pbbot::GroupAdminNoticeEvent {
     let client = event.client;
-    let change = event.change;
+    let change = event.inner;
 
     pbbot::GroupAdminNoticeEvent {
         time: chrono::Utc::now().timestamp(),
