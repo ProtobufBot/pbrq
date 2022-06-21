@@ -17,6 +17,8 @@ pub enum RCError {
     Timeout,
     #[error("client_not_found error")]
     ClientNotFound,
+    #[error("protocol_not_supported error")]
+    ProtocolNotSupported,
     #[error("io error, {0}")]
     IO(#[from] io::Error),
     #[error("websocket error, {0}")]
@@ -39,6 +41,7 @@ impl IntoResponse for RCError {
     fn into_response(self) -> Response {
         let code = match self {
             Self::ClientNotFound => StatusCode::BAD_REQUEST,
+            Self::ProtocolNotSupported => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (code, self.to_string()).into_response()

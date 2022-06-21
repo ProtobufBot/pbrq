@@ -72,7 +72,11 @@ pub struct CreateClientResp {
 pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateClientResp>> {
     let rand_seed = req.device_seed.unwrap_or_else(rand::random);
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
-    let protocol = Protocol::from_u8(req.protocol);
+    let protocol = match Protocol::from_u8(req.protocol) {
+        Protocol::MacOS => Protocol::MacOS,
+        Protocol::AndroidWatch => Protocol::AndroidWatch,
+        _ => return Err(RCError::ProtocolNotSupported),
+    };
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
     let cli = Arc::new(Client::new(device, get_version(protocol), sender));
     let stream = tokio::net::TcpStream::connect(cli.get_address())
