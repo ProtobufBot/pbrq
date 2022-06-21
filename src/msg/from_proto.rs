@@ -1,14 +1,16 @@
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 
 use async_recursion::async_recursion;
 use ricq::msg::{elem, MessageChain};
 use ricq::Client;
+use ricq_core::hex::encode_hex;
 
 use crate::error::RCResult;
 use crate::idl::pbbot;
 use crate::msg::from_xml::xml_to_proto;
-use crate::util::uri_reader::get_binary;
+use crate::util::uri_reader::{get_binary, read_binary_file};
 
 #[derive(Clone, Debug)]
 pub enum Contact {
@@ -45,6 +47,13 @@ pub async fn to_rq_chain(
                     append_image(client, &mut chain, element.data, contact.clone()).await
                 {
                     tracing::error!("failed to append image: {}", e)
+                }
+            }
+            "video" => {
+                if let Err(e) =
+                    append_video(client, &mut chain, element.data, contact.clone()).await
+                {
+                    tracing::error!("failed to append video: {}", e)
                 }
             }
             _ => {
@@ -95,5 +104,62 @@ pub async fn append_image(
         Contact::Group(code) => chain.push(client.upload_group_image(code, data).await?),
         Contact::Friend(uin) => chain.push(client.upload_friend_image(uin, data).await?),
     }
+    Ok(())
+}
+
+pub async fn append_video(
+    client: &Arc<Client>,
+    chain: &mut MessageChain,
+    mut data: HashMap<String, String>,
+    contact: Contact,
+) -> RCResult<()> {
+    let cover_url = data.remove("cover").unwrap_or_default();
+    let cover_data = get_binary(&cover_url).await?;
+    let video_url = data.remove("url").unwrap_or_default();
+    let video_cache_path = format!(
+        "video/{}.mp4",
+        encode_hex(&md5::compute(&video_url).to_vec())
+    );
+    let use_cache = Some("1".to_string()) == data.remove("cache");
+    if use_cache {
+        if Path::new(&video_cache_path).exists() {
+            if let Ok(video_data) = read_binary_file(&video_cache_path).await {
+                chain.push(
+                    client
+                        .upload_group_short_video(
+                            match contact {
+                                Contact::Group(code) => code,
+                                Contact::Friend(uin) => uin,
+                            },
+                            video_data,
+                            cover_data,
+                        )
+                        .await?,
+                );
+                return Ok(());
+            }
+        }
+    }
+    let video_data = get_binary(&video_url).await?;
+    if use_cache {
+        if !Path::new("video").exists() {
+            tokio::fs::create_dir_all("video").await.ok();
+        }
+        if let Err(err) = tokio::fs::write(video_cache_path, &video_data).await {
+            tracing::error!("failed to write video cache {}", err)
+        }
+    }
+    chain.push(
+        client
+            .upload_group_short_video(
+                match contact {
+                    Contact::Group(code) => code,
+                    Contact::Friend(uin) => uin,
+                },
+                video_data,
+                cover_data,
+            )
+            .await?,
+    );
     Ok(())
 }

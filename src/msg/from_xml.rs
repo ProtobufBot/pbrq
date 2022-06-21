@@ -44,7 +44,7 @@ pub fn xml_to_proto(s: String) -> Vec<pbbot::Message> {
 mod tests {
     extern crate xml;
 
-    use crate::msg::from_xml::xml_to_proto;
+    use super::*;
 
     #[test]
     fn test_xml_to_proto() {
