@@ -117,6 +117,12 @@ pub async fn login(Json(req): Json<CreateClientReq>) -> RCResult<Json<PasswordLo
         rand_seed = req.uin as u64;
     }
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
+    tokio::fs::write(
+        format!("device-{}.json", rand_seed),
+        serde_json::to_string(&device).unwrap(),
+    )
+    .await
+    .ok();
     let protocol = Protocol::from_u8(req.protocol);
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
     let cli = Arc::new(Client::new(device, get_version(protocol.clone()), sender));

@@ -72,6 +72,12 @@ pub struct CreateClientResp {
 pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateClientResp>> {
     let rand_seed = req.device_seed.unwrap_or_else(rand::random);
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(rand_seed));
+    tokio::fs::write(
+        format!("device-{}.json", rand_seed),
+        serde_json::to_string(&device).unwrap(),
+    )
+    .await
+    .ok();
     let protocol = match Protocol::from_u8(req.protocol) {
         Protocol::MacOS => Protocol::MacOS,
         Protocol::AndroidWatch => Protocol::AndroidWatch,
