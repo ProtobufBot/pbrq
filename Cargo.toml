@@ -30,7 +30,7 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "local-time"] }
 time = { version = "0.3", features = ["macros", "local-offset"] }
 dashmap = "5.2"
 hyper = { version = "0.14", features = ["client", "http1"] }
-hyper-rustls = "0.23"
+hyper-tls = { version = "0.5", features = ["vendored"] }
 chrono = "0.4"
 xml-rs = "0.8"
 async-recursion = "1.0.0"
