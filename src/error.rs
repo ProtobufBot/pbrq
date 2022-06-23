@@ -27,8 +27,8 @@ pub enum RCError {
     PB(#[from] prost::DecodeError),
     #[error("rq error, {0}")]
     RQ(#[from] RQError),
-    #[error("hyper error, {0}")]
-    Hyper(#[from] hyper::Error),
+    #[error("reqwest error, {0}")]
+    Reqwest(#[from] reqwest::Error),
     #[error("base64 decode error, {0}")]
     Base64Decode(#[from] base64::DecodeError),
     #[error("invalid uri error, {0}")]

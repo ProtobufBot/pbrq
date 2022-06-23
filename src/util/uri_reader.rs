@@ -1,4 +1,5 @@
-use hyper::{Body, Client, Request};
+use std::time::Duration;
+
 use tokio::io::AsyncReadExt;
 
 use crate::error::{RCError, RCResult};
@@ -17,13 +18,16 @@ pub async fn get_binary(uri: &str) -> RCResult<Vec<u8>> {
 }
 
 pub async fn http_get(uri: &str) -> RCResult<Vec<u8>> {
-    let cli = Client::builder().build::<_, Body>(hyper_tls::HttpsConnector::new());
-    let req = Request::builder().uri(uri).body(Body::empty())?;
-    let resp = cli.request(req).await?;
-    hyper::body::to_bytes(resp.into_body())
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()?
+        .get(uri)
+        .send()
+        .await?
+        .bytes()
         .await
         .map(|b| b.to_vec())
-        .map_err(crate::error::RCError::Hyper)
+        .map_err(RCError::from)
 }
 
 pub async fn read_binary_file(path: &str) -> RCResult<Vec<u8>> {
