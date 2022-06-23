@@ -121,23 +121,21 @@ pub async fn append_video(
         encode_hex(&md5::compute(&video_url).to_vec())
     );
     let use_cache = Some("1".to_string()) == data.remove("cache");
-    if use_cache {
-        if Path::new(&video_cache_path).exists() {
-            if let Ok(video_data) = read_binary_file(&video_cache_path).await {
-                chain.push(
-                    client
-                        .upload_group_short_video(
-                            match contact {
-                                Contact::Group(code) => code,
-                                Contact::Friend(uin) => uin,
-                            },
-                            video_data,
-                            cover_data,
-                        )
-                        .await?,
-                );
-                return Ok(());
-            }
+    if use_cache && Path::new(&video_cache_path).exists() {
+        if let Ok(video_data) = read_binary_file(&video_cache_path).await {
+            chain.push(
+                client
+                    .upload_group_short_video(
+                        match contact {
+                            Contact::Group(code) => code,
+                            Contact::Friend(uin) => uin,
+                        },
+                        video_data,
+                        cover_data,
+                    )
+                    .await?,
+            );
+            return Ok(());
         }
     }
     let video_data = get_binary(&video_url).await?;
