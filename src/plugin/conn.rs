@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -22,7 +22,6 @@ use super::Plugin;
 
 pub struct PluginConnection {
     pub plugin: Plugin,
-    pub running: AtomicBool,
     url_index: AtomicU32,
     out_channel: broadcast::Sender<Message>,
     pub stop_channel: broadcast::Sender<()>,
@@ -40,7 +39,6 @@ impl PluginConnection {
             plugin,
             out_channel,
             stop_channel,
-            running: AtomicBool::new(false),
             event_seq: AtomicU32::new(0),
         }
     }
@@ -50,7 +48,6 @@ impl PluginConnection {
     }
 
     pub fn stop(&self) {
-        self.running.store(false, Ordering::Relaxed);
         self.stop_channel.send(()).ok();
     }
 
@@ -72,6 +69,7 @@ impl PluginConnection {
                 .unwrap_or_else(|| "8081".into())
         );
         let stream = TcpStream::connect(addr).await.map_err(RCError::IO)?;
+        tracing::info!("succeed to connect plugin [{}]", self.plugin.name);
         let req = Request::builder()
             .uri(uri)
             .header("x-self-id", bot.client.uin().await)
@@ -85,26 +83,21 @@ impl PluginConnection {
         let mut stop_channel = self.stop_channel.subscribe();
 
         let name = self.plugin.name.clone();
-        self.running.store(true, Ordering::Relaxed);
-        while self.running.load(Ordering::Relaxed) {
+        loop {
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(5))=>{
                     tracing::trace!("plugin send ping {}", name);
                     self.send_msg(Message::Ping("ping".as_bytes().to_vec()));
                 }
                 out_message = out_channel.recv() => {
-                    if let Ok(out_message)=out_message{
-                        w.send(out_message).await.map_err(RCError::WS)?;
-                    }else {
-                        break;
-                    }
+                    w.send(out_message.map_err(|e|RCError::Other(format!("failed to recv out_message {}",e)))?).await.map_err(RCError::WS)?;
                 }
                 in_message = r.next()=>{
-                    if let Some(Ok(msg))=in_message{
-                        match msg{
-                            Message::Binary(m) => {
-                                let b=bot.clone();
-                                let conn=self.clone();
+                    let msg=in_message.ok_or_else(||RCError::Other("failed to recv ws in_message".into()))??;
+                    match msg{
+                        Message::Binary(m) => {
+                            let b=bot.clone();
+                            let conn=self.clone();
                                 let _: JoinHandle<Result<(),RCError>> =tokio::spawn(async move {
                                     let req = pbbot::Frame::from_bytes(&m).map_err(RCError::PB)?;
                                     // TODO check api permission
@@ -112,27 +105,21 @@ impl PluginConnection {
                                     conn.send_msg(Message::Binary(resp.to_bytes()));
                                     Ok(())
                                 });
-
                             }
                             Message::Ping(m) => {
                                 self.send_msg(Message::Pong(m))
                             }
                             Message::Close(_) => {
-                                break;
+                                return Err(RCError::Other("connection is closed".into()))
                             }
                             _=>{}
                         }
-                    }else{
-                        break;
-                    }
                 }
                 _ = stop_channel.recv() => {
-                    break;
+                    return Err(RCError::Other("plugin is stopped".into()))
                 }
             }
         }
-        self.running.store(false, Ordering::Relaxed);
-        Ok(())
     }
 
     pub async fn handle_event(&self, bot_id: i64, event: pbbot::frame::Data) {

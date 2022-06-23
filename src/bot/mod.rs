@@ -71,7 +71,7 @@ impl Bot {
                     tokio::select! {
                         reason = plugin.start(&bot) => {
                             // 阻塞到断开
-                            tracing::warn!("plugin {} disconnect: {:?}", name, reason);
+                            tracing::warn!("plugin [{}] error: {:?}", name, reason);
                         }
                         _ = stop_signal.recv() => {
                             break;

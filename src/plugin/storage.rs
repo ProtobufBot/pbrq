@@ -27,7 +27,9 @@ pub async fn load_plugins(path: &str) -> std::io::Result<Vec<Plugin>> {
         }
     }
     if plugins.is_empty() {
-        save_plugin(PLUGIN_PATH, &Plugin::default()).await;
+        save_plugin(PLUGIN_PATH, &Plugin::default())
+            .await
+            .expect("failed to save default plugin");
         plugins.push(Plugin::default());
     }
     Ok(plugins)
