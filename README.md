@@ -5,6 +5,8 @@
 
 ## 使用方法
 
+### 直接运行
+
 1. 下载 [Release](https://github.com/ProtobufBot/pbbot-rq/releases) 版本。
 2. 下载 [PBRQ-UI-Release](https://github.com/ProtobufBot/pbrq-react-ui/releases)，并解压 static.zip。
 3. 如果是 Linux/MacOS 需要执行 `chmod +x pbbot-rq` 添加权限。
@@ -33,7 +35,14 @@
             └── main.989aee2b.js.LICENSE.txt
 ```
 
+### Docker运行
 
+```bash
+docker run --name pbrq -d -p 9000:9000 -v plugins:/app/plugins lz1998/pbrq:0.1.9
+```
+
+- 默认端口 9000
+- 挂载目录 plugins，修改需要重启`docker restart pbrq`
 
 
 ## API
