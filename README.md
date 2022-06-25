@@ -9,7 +9,7 @@
 2. 下载 [PBRQ-UI-Release](https://github.com/ProtobufBot/pbrq-react-ui/releases)，并解压 static.zip。
 3. 如果是 Linux/MacOS 需要执行 `chmod +x pbbot-rq` 添加权限。
 4. 执行 `./pbbot-rq --help` 查看帮助。
-5. 执行 `./pbbot-rq --bind-dir 0.0.0.0:9000 --static-dir static` 启动程序，可以自己添加参数开启 跨域、HTTP-BASIC登录 等功能。
+5. 执行 `./pbbot-rq --bind-addr 0.0.0.0:9000 --static-dir static` 启动程序，可以自己添加参数开启 跨域、HTTP-BASIC登录 等功能。
 6. 打开浏览器访问 `http://localhost:9000` 管理机器人。
 7. 首次运行后生成 `plugins` 文件夹，默认连接地址 `ws://localhost:8081/ws/rq/`，修改后重启生效。
 
