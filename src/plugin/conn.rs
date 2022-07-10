@@ -5,7 +5,6 @@ use std::time::Duration;
 use futures::{SinkExt, StreamExt};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use tokio::net::TcpStream;
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::tungstenite::http::{Request, Uri};
@@ -68,7 +67,13 @@ impl PluginConnection {
                 .map(|p| p.to_string())
                 .unwrap_or_else(|| "8081".into())
         );
-        let stream = TcpStream::connect(addr).await.map_err(RCError::IO)?;
+        let stream = tokio::time::timeout(
+            Duration::from_secs(10),
+            tokio::net::TcpStream::connect(addr),
+        )
+        .await
+        .map_err(tokio::io::Error::from)
+        .flatten()?;
         tracing::info!("succeed to connect plugin [{}]", self.plugin.name);
         let req = Request::builder()
             .uri(uri)

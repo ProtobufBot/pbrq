@@ -1,3 +1,4 @@
+#![feature(result_flattening)]
 pub mod api_handler;
 pub mod bot;
 pub mod error;
