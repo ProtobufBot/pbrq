@@ -143,11 +143,15 @@ pub async fn to_proto_event(bot: &Arc<Bot>, event: QEvent) -> Option<pbbot::fram
 }
 
 pub async fn to_proto_group_message(
-    _: &Arc<Bot>,
+    bot: &Arc<Bot>,
     event: GroupMessageEvent,
 ) -> pbbot::GroupMessageEvent {
     let client = event.client;
     let message = event.inner;
+    let role = bot
+        .cached_group_role(message.group_code, message.from_uin)
+        .await
+        .unwrap_or_default();
     let message_id = MessageReceipt {
         sender_id: message.from_uin,
         time: message.time as i64,
@@ -172,6 +176,12 @@ pub async fn to_proto_group_message(
         sender: Some(pbbot::group_message_event::Sender {
             user_id: message.from_uin,
             card: message.group_card,
+            role: match role {
+                GroupMemberPermission::Owner => "owner",
+                GroupMemberPermission::Administrator => "admin",
+                GroupMemberPermission::Member => "member",
+            }
+            .into(),
             ..Default::default()
         }),
         font: 0,

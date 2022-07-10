@@ -2,11 +2,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use cached::Cached;
 use ricq::client::NetworkStatus;
 use ricq::handler::QEvent;
 use ricq::Client;
-use tokio::sync::broadcast;
+use ricq_core::structs::GroupMemberPermission;
+use tokio::sync::{broadcast, Mutex};
 
+use crate::error::RCResult;
 use crate::event::to_proto_event;
 use crate::plugin::conn::PluginConnection;
 use crate::plugin::Plugin;
@@ -17,6 +20,7 @@ pub struct Bot {
     pub client: Arc<Client>,
     pub plugin_connections: HashMap<String, Arc<PluginConnection>>,
     pub stop_channel: broadcast::Sender<()>,
+    pub group_role_cache: Mutex<cached::TimedCache<(i64, i64), GroupMemberPermission>>,
 }
 
 impl Bot {
@@ -29,6 +33,7 @@ impl Bot {
                 .into_iter()
                 .map(|p| (p.name.clone(), Arc::new(PluginConnection::new(p))))
                 .collect(),
+            group_role_cache: Mutex::new(cached::TimedCache::with_lifespan(30)),
         }
     }
 
@@ -90,6 +95,33 @@ impl Bot {
             p.stop();
         }
         self.client.stop(NetworkStatus::Stop);
+    }
+
+    pub async fn cached_group_role(
+        &self,
+        group_id: i64,
+        user_id: i64,
+    ) -> RCResult<GroupMemberPermission> {
+        if let Some(role) = self
+            .group_role_cache
+            .lock()
+            .await
+            .cache_get(&(group_id, user_id))
+            .cloned()
+        {
+            return Ok(role);
+        }
+        let admins = self.client.get_group_admin_list(group_id).await?;
+        let user_permission = admins.get(&user_id).cloned().unwrap_or_default();
+        let mut cache = self.group_role_cache.lock().await;
+        for (uin, permission) in admins {
+            cache.cache_set((group_id, uin), permission);
+        }
+        if cache.cache_misses().unwrap_or_default() > 100 {
+            cache.flush();
+            cache.cache_reset_metrics();
+        }
+        Ok(user_permission)
     }
 }
 
