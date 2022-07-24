@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use ricq::structs::GroupMemberPermission;
+use ricq_core::command::oidb_svc::music::{MusicShare, MusicType};
 
 use crate::bot::Bot;
 use crate::error::{RCError, RCResult};
@@ -108,6 +109,7 @@ pub async fn handle_api_data(bot: &Arc<Bot>, data: Data) -> Option<Data> {
         Data::SetGroupSignInReq(req) => handle_set_group_sign_in(bot, req)
             .await
             .map(Data::SetGroupSignInResp),
+        Data::SendMusicReq(req) => handle_send_music(bot, req).await.map(Data::SendMusicResp),
         _ => Err(RCError::None("api_req not supported")),
     }
     .ok()
@@ -481,4 +483,30 @@ pub async fn handle_set_group_sign_in(
 ) -> RCResult<SetGroupSignInResp> {
     bot.client.group_sign_in(req.group_id).await?;
     Ok(SetGroupSignInResp {})
+}
+
+pub async fn handle_send_music(bot: &Arc<Bot>, req: SendMusicReq) -> RCResult<SendMusicResp> {
+    let music_share = MusicShare {
+        title: req.title,
+        brief: req.brief,
+        summary: req.summary,
+        url: req.url,
+        picture_url: req.picture_url,
+        music_url: req.music_url,
+    };
+    let music_type = match req.r#type.as_str() {
+        "qq" => MusicType::QQ,
+        "cloud" => MusicType::Cloud,
+        _ => MusicType::QQ,
+    };
+    if req.group_id != 0 {
+        bot.client
+            .send_friend_music_share(req.user_id, music_share, music_type)
+            .await?;
+    } else {
+        bot.client
+            .send_group_music_share(req.group_id, music_share, music_type)
+            .await?;
+    }
+    Ok(SendMusicResp {})
 }
