@@ -6,6 +6,7 @@ use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use ricq::client::{Connector, DefaultConnector};
 use ricq::{
     client::NetworkStatus,
     device::Device,
@@ -79,9 +80,8 @@ pub async fn create(Json(req): Json<CreateClientReq>) -> RCResult<Json<CreateCli
     };
     let (sender, receiver) = tokio::sync::broadcast::channel(10);
     let cli = Arc::new(Client::new(device, get_version(protocol), sender));
-    let stream = tokio::net::TcpStream::connect(cli.get_address())
-        .await
-        .map_err(RCError::IO)?;
+    let connector = DefaultConnector;
+    let stream = connector.connect(&cli).await?;
     let c = cli.clone();
     let network_join_handle = tokio::spawn(async move { c.start(stream).await });
     tokio::task::yield_now().await;

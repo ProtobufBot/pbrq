@@ -4,10 +4,11 @@ use axum::Json;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use rand::{prelude::StdRng, SeedableRng};
+use ricq::client::{Connector, DefaultConnector};
 use ricq::{
     client::NetworkStatus,
     device::Device,
-    ext::reconnect::{Connector, Credential, DefaultConnector, Password},
+    ext::reconnect::{Credential, Password},
     handler::QEvent,
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,

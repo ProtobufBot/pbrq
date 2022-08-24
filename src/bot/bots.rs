@@ -3,9 +3,10 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 use lazy_static::lazy_static;
+use ricq::client::DefaultConnector;
 use ricq::{
     ext::common::after_login,
-    ext::reconnect::{auto_reconnect, Credential, DefaultConnector},
+    ext::reconnect::{auto_reconnect, Credential},
     handler::QEvent,
     Client,
 };
