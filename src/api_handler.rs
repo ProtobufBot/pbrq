@@ -262,7 +262,7 @@ pub async fn handle_set_group_special_title(
 ) -> RCResult<SetGroupSpecialTitleResp> {
     // TODO duration 无效
     bot.client
-        .group_edit_special_title(req.group_id, req.group_id, req.special_title)
+        .group_edit_special_title(req.group_id, req.user_id, req.special_title)
         .await?;
     Ok(SetGroupSpecialTitleResp {})
 }
