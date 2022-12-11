@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-ricq = "0.1"
+ricq = { version = "0.1", git = "https://github.com/lz1998/ricq" }
 futures = "0.3"
 async-trait = "0.1"
 bytes = "1.1.0"
@@ -34,7 +34,7 @@ chrono = "0.4"
 xml-rs = "0.8"
 async-recursion = "1.0.0"
 md5 = "0.7"
-ricq-core = "0.1"
+ricq-core = { version = "0.1", git = "https://github.com/lz1998/ricq" }
 
 [build-dependencies]
 #lust-build = { version = "*", registry = "crates-byted" }

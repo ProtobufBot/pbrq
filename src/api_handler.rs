@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use ricq::structs::GroupMemberPermission;
-use ricq_core::command::oidb_svc::music::{MusicShare, MusicType};
+use ricq_core::structs::{MusicShare, MusicVersion};
 
 use crate::bot::Bot;
 use crate::error::{RCError, RCResult};
@@ -495,9 +495,12 @@ pub async fn handle_send_music(bot: &Arc<Bot>, req: SendMusicReq) -> RCResult<Se
         music_url: req.music_url,
     };
     let music_type = match req.r#type.as_str() {
-        "qq" => MusicType::QQ,
-        "cloud" => MusicType::Cloud,
-        _ => MusicType::QQ,
+        "qq" => MusicVersion::QQ,
+        "cloud" => MusicVersion::NETEASE,
+        "migu" => MusicVersion::MIGU,
+        "kugou" => MusicVersion::KUGOU,
+        "kuwo" => MusicVersion::KUWO,
+        _ => MusicVersion::QQ,
     };
     if req.group_id != 0 {
         bot.client
